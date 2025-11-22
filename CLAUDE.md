@@ -132,7 +132,3 @@ Tested and working in modern browsers that support:
 - YouTube IFrame API
 - localStorage
 - Fetch API
-
-## File Location
-
-`/Users/levi/Documents/webApps/nihongoVerbQuiz/text_to_speech/templates/text_to_speech/doublePlay.html`
