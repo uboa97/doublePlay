@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double Play - YouTube Video & Audio</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e4e4e4;
+        }
+        .container {
+            max-width: 1400px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background-color: #2b2b3d;
+            border: 1px solid #3d3d54;
+        }
+        .card-body {
+            background-color: #2b2b3d;
+            border-radius: 15px;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            background: #000;
+            border-radius: 10px;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .audio-player {
+            position: relative;
+            height: 350px;
+            width: 622px;
+            flex-shrink: 0;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .audio-player iframe {
+            width: 100%;
+            height: 100%;
+        }
+        .btn-custom {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-fixed-width {
+            min-width: 220px;
+        }
+        .control-buttons {
+            display: none;
+        }
+        .control-buttons.active {
+            display: block;
+            background-color: #2b2b3d;
+            border: 1px solid #3d3d54;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .audio-controls-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .skip-buttons-left,
+        .skip-buttons-right {
+            display: flex;
+            gap: 8px;
+            flex-direction: column;
+        }
+        .btn-skip {
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            min-width: 80px;
+        }
+        @media (max-width: 768px) {
+            .audio-controls-container {
+                flex-direction: column;
+            }
+            .skip-buttons-left,
+            .skip-buttons-right {
+                flex-direction: row;
+            }
+        }
+        .recent-item {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #353548 !important;
+            border-color: #4a4a5e !important;
+            color: #e4e4e4 !important;
+        }
+        .recent-item:hover {
+            background-color: #424257 !important;
+            transform: translateX(5px);
+        }
+        .recent-item small {
+            display: block;
+            margin-top: 4px;
+        }
+        .form-control {
+            background-color: #353548;
+            border-color: #4a4a5e;
+            color: #e4e4e4;
+        }
+        .form-control:focus {
+            background-color: #3d3d54;
+            border-color: #667eea;
+            color: #e4e4e4;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+        .form-control::placeholder {
+            color: #888899;
+        }
+        .form-label {
+            color: #e4e4e4;
+        }
+        .text-muted {
+            color: #9999aa !important;
+        }
+        .text-secondary {
+            color: #aaaacc !important;
+        }
+        .text-primary {
+            color: #667eea !important;
+        }
+        h1, h5, h6 {
+            color: #e4e4e4;
+        }
+        .list-group-item {
+            background-color: #353548;
+            border-color: #4a4a5e;
+            color: #e4e4e4;
+        }
+        .bg-light {
+            background-color: #353548 !important;
+        }
+    </style>
+</head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WJ1R5J2RT0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-WJ1R5J2RT0');
+</script>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4 mt-5 text-primary">🎬 Double Play</h1>
+        <p class="text-center text-muted mb-4">Play video from one YouTube link and audio from another simultaneously</p>
+
+        <div id="playerContainer" class="control-buttons">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-secondary mb-0">🎬 Video Track (Muted)</h6>
+                        <button type="button" id="changeVideoBtn" class="btn btn-sm btn-outline-light">Change Video</button>
+                    </div>
+                    <div id="changeVideoForm" class="mb-2" style="display: none;">
+                        <div class="d-flex gap-2">
+                            <input type="text" id="newVideoInput" class="form-control form-control-sm" placeholder="Enter new YouTube URL">
+                            <button type="button" id="submitNewVideoBtn" class="btn btn-sm btn-primary">Submit</button>
+                            <button type="button" id="cancelChangeVideoBtn" class="btn btn-sm btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                    <div class="video-container mb-3">
+                        <div id="videoPlayer"></div>
+                    </div>
+
+                    <h6 class="text-secondary mb-2">🔊 Audio Track</h6>
+                    <div class="audio-controls-container">
+                        <div class="skip-buttons-left">
+                            <button type="button" id="skip-10" class="btn btn-outline-light btn-skip">⏪ -10s</button>
+                            <button type="button" id="skip-5" class="btn btn-outline-light btn-skip">◀ -5s</button>
+                        </div>
+                        <div class="audio-player">
+                            <div id="audioPlayer"></div>
+                        </div>
+                        <div class="skip-buttons-right">
+                            <button type="button" id="skipPlus5" class="btn btn-outline-light btn-skip">▶ +5s</button>
+                            <button type="button" id="skipPlus10" class="btn btn-outline-light btn-skip">⏩ +10s</button>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3 mb-4">
+                        <button type="button" id="playPauseBothBtn" class="btn btn-success btn-lg btn-custom btn-fixed-width">
+                            ⏸ Pause Both
+                        </button>
+                    </div>
+                </div>
+
+        <div class="card mt-4">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label for="videoLink" class="form-label fw-bold">Video Link (with muted video)</label>
+                    <input type="text" class="form-control" id="videoLink" placeholder="Paste YouTube URL here">
+                    <small class="form-text text-muted">This video will be displayed with no sound</small>
+                </div>
+
+                <div class="mb-4">
+                    <label for="audioLink" class="form-label fw-bold">Audio Link (audio only)</label>
+                    <input type="text" class="form-control" id="audioLink" placeholder="Paste YouTube URL here">
+                    <small class="form-text text-muted">This video will play audio only (hidden)</small>
+                </div>
+
+                <div class="text-center mb-4">
+                    <button type="button" id="doublePlayBtn" class="btn btn-primary btn-lg btn-custom">
+                        ▶ Double Play
+                    </button>
+                </div>
+
+                <div id="recentlyPlayed" class="mb-4" style="display: none;">
+                    <h5 class="text-secondary mb-3">📜 Recently Played</h5>
+                    <div id="recentList" class="list-group">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let videoPlayer = null;
+        let audioPlayer = null;
+        let YTReady = false;
+        let bothPlaying = true;
+        let currentVideoLink = '';
+        let currentAudioLink = '';
+        const STORAGE_KEY = 'doublePlayRecent';
+
+        // YouTube IFrame API ready callback - must be global
+        window.onYouTubeIframeAPIReady = function() {
+            YTReady = true;
+            console.log('YouTube API is ready');
+        }
+
+        // Load recently played items on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            loadRecentlyPlayed();
+
+            // Check if YouTube API is already loaded (in case of fast load or cache)
+            if (typeof YT !== 'undefined' && YT.loaded) {
+                YTReady = true;
+                console.log('YouTube API was already loaded');
+            }
+        });
+
+        // Extract YouTube video ID from URL
+        function getYouTubeID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        // Fetch YouTube video title
+        async function fetchVideoTitle(videoID) {
+            try {
+                const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoID}&format=json`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.title;
+                }
+            } catch (error) {
+                console.error('Error fetching video title:', error);
+            }
+            return null;
+        }
+
+        // Save to recently played
+        async function saveToRecent(videoLink, audioLink) {
+            let recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+            // Check if this exact pair already exists
+            const existingIndex = recent.findIndex(item =>
+                item.videoLink === videoLink && item.audioLink === audioLink
+            );
+
+            // If exists, remove it (we'll add it to the front)
+            if (existingIndex !== -1) {
+                recent.splice(existingIndex, 1);
+            }
+
+            // Fetch video titles
+            const videoID = getYouTubeID(videoLink);
+            const audioID = getYouTubeID(audioLink);
+            const videoTitle = await fetchVideoTitle(videoID);
+            const audioTitle = await fetchVideoTitle(audioID);
+
+            // Add to the beginning
+            recent.unshift({
+                videoLink,
+                audioLink,
+                videoTitle: videoTitle || videoID,
+                audioTitle: audioTitle || audioID,
+                timestamp: Date.now()
+            });
+
+            // Keep only last 3
+            recent = recent.slice(0, 3);
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
+            loadRecentlyPlayed();
+        }
+
+        // Load and display recently played
+        function loadRecentlyPlayed() {
+            const recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const recentList = document.getElementById('recentList');
+            const recentSection = document.getElementById('recentlyPlayed');
+
+            if (recent.length === 0) {
+                recentSection.style.display = 'none';
+                return;
+            }
+
+            recentSection.style.display = 'block';
+            recentList.innerHTML = '';
+
+            recent.forEach((item, index) => {
+                const videoID = getYouTubeID(item.videoLink);
+                const audioID = getYouTubeID(item.audioLink);
+
+                // Use stored titles if available, otherwise fall back to IDs
+                const videoDisplay = item.videoTitle || videoID;
+                const audioDisplay = item.audioTitle || audioID;
+
+                const listItem = document.createElement('a');
+                listItem.href = '#';
+                listItem.className = 'list-group-item list-group-item-action recent-item';
+                listItem.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div style="flex: 1; min-width: 0;">
+                            <small class="text-muted text-truncate d-block">🎬 Video: ${escapeHtml(videoDisplay)}</small>
+                            <small class="text-muted text-truncate d-block">🔊 Audio: ${escapeHtml(audioDisplay)}</small>
+                        </div>
+                        <small class="text-muted ms-2" style="white-space: nowrap;">${formatTimestamp(item.timestamp)}</small>
+                    </div>
+                `;
+
+                listItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('videoLink').value = item.videoLink;
+                    document.getElementById('audioLink').value = item.audioLink;
+                    // Scroll to top so user can see the filled inputs
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+
+                recentList.appendChild(listItem);
+            });
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Format timestamp for display
+        function formatTimestamp(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes}m ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${days}d ago`;
+        }
+
+        // Initialize players when Double Play is clicked
+        document.getElementById('doublePlayBtn').addEventListener('click', function() {
+            const videoLink = document.getElementById('videoLink').value;
+            const audioLink = document.getElementById('audioLink').value;
+
+            if (!videoLink || !audioLink) {
+                alert('Please enter both YouTube links');
+                return;
+            }
+
+            const videoID = getYouTubeID(videoLink);
+            const audioID = getYouTubeID(audioLink);
+
+            if (!videoID || !audioID) {
+                alert('Please enter valid YouTube URLs');
+                return;
+            }
+
+            if (!YTReady) {
+                alert('YouTube API is still loading. Please try again in a moment.');
+                return;
+            }
+
+            // Save current links
+            currentVideoLink = videoLink;
+            currentAudioLink = audioLink;
+
+            // Save to recently played
+            saveToRecent(videoLink, audioLink);
+
+            // Show player container
+            document.getElementById('playerContainer').classList.add('active');
+
+            // Initialize players
+            initializePlayers(videoID, audioID);
+        });
+
+        function initializePlayers(videoID, audioID) {
+            // Destroy existing players if they exist
+            if (videoPlayer) {
+                videoPlayer.destroy();
+            }
+            if (audioPlayer) {
+                audioPlayer.destroy();
+            }
+
+            // Create video player (muted, with video)
+            videoPlayer = new YT.Player('videoPlayer', {
+                videoId: videoID,
+                playerVars: {
+                    'autoplay': 1,
+                    'mute': 1,
+                    'controls': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onVideoPlayerReady
+                }
+            });
+
+            // Create audio player (visible, with controls)
+            audioPlayer = new YT.Player('audioPlayer', {
+                videoId: audioID,
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onAudioPlayerReady
+                }
+            });
+        }
+
+        function onVideoPlayerReady(event) {
+            event.target.mute();
+            event.target.playVideo();
+        }
+
+        function onAudioPlayerReady(event) {
+            event.target.playVideo();
+            bothPlaying = true;
+        }
+
+        // Play/Pause Both button
+        document.getElementById('playPauseBothBtn').addEventListener('click', function() {
+            if (!videoPlayer || !audioPlayer) return;
+
+            if (bothPlaying) {
+                videoPlayer.pauseVideo();
+                audioPlayer.pauseVideo();
+                this.innerHTML = '▶ Play Both';
+                this.classList.remove('btn-success');
+                this.classList.add('btn-primary');
+                bothPlaying = false;
+            } else {
+                videoPlayer.playVideo();
+                audioPlayer.playVideo();
+                this.innerHTML = '⏸ Pause Both';
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-success');
+                bothPlaying = true;
+            }
+        });
+
+        // Skip audio player function
+        function skipAudio(seconds) {
+            if (!audioPlayer || typeof audioPlayer.getCurrentTime !== 'function') {
+                return;
+            }
+            const currentTime = audioPlayer.getCurrentTime();
+            const newTime = Math.max(0, currentTime + seconds);
+            audioPlayer.seekTo(newTime, true);
+        }
+
+        // Skip button event listeners
+        document.getElementById('skip-10').addEventListener('click', function() {
+            skipAudio(-10);
+        });
+
+        document.getElementById('skip-5').addEventListener('click', function() {
+            skipAudio(-5);
+        });
+
+        document.getElementById('skipPlus5').addEventListener('click', function() {
+            skipAudio(5);
+        });
+
+        document.getElementById('skipPlus10').addEventListener('click', function() {
+            skipAudio(10);
+        });
+
+        // Change Video button - show form
+        document.getElementById('changeVideoBtn').addEventListener('click', function() {
+            document.getElementById('changeVideoForm').style.display = 'block';
+            document.getElementById('newVideoInput').focus();
+        });
+
+        // Cancel change video
+        document.getElementById('cancelChangeVideoBtn').addEventListener('click', function() {
+            document.getElementById('changeVideoForm').style.display = 'none';
+            document.getElementById('newVideoInput').value = '';
+        });
+
+        // Submit new video
+        document.getElementById('submitNewVideoBtn').addEventListener('click', async function() {
+            const newVideoLink = document.getElementById('newVideoInput').value.trim();
+
+            if (!newVideoLink) {
+                alert('Please enter a YouTube URL');
+                return;
+            }
+
+            const newVideoID = getYouTubeID(newVideoLink);
+
+            if (!newVideoID) {
+                alert('Please enter a valid YouTube URL');
+                return;
+            }
+
+            // Update the video player
+            if (videoPlayer) {
+                videoPlayer.loadVideoById(newVideoID);
+                videoPlayer.mute();
+            }
+
+            // Update current video link
+            currentVideoLink = newVideoLink;
+
+            // Update recently played in localStorage
+            let recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+            if (recent.length > 0) {
+                // Fetch new video title
+                const newVideoTitle = await fetchVideoTitle(newVideoID);
+
+                // Update the most recent entry (index 0)
+                recent[0].videoLink = newVideoLink;
+                recent[0].videoTitle = newVideoTitle || newVideoID;
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
+                loadRecentlyPlayed();
+            }
+
+            // Hide form and clear input
+            document.getElementById('changeVideoForm').style.display = 'none';
+            document.getElementById('newVideoInput').value = '';
+        });
+
+        // Allow Enter key to submit new video
+        document.getElementById('newVideoInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('submitNewVideoBtn').click();
+            }
+        });
+    </script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
