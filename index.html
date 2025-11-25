@@ -155,6 +155,37 @@
         .bg-light {
             background-color: #353548 !important;
         }
+        #prevBtn:disabled,
+        #nextBtn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .history-tab {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: inline-block;
+            color: #9999aa;
+            font-weight: 600;
+        }
+        .history-tab:hover {
+            background-color: #3d3d54;
+            color: #e4e4e4;
+        }
+        .history-tab.active {
+            background-color: #667eea;
+            color: #ffffff;
+        }
+        .favorite-btn {
+            padding: 4px 8px;
+            font-size: 14px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .favorite-btn:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-WJ1R5J2RT0"></script>
@@ -228,9 +259,19 @@
                     </button>
                 </div>
 
-                <div id="recentlyPlayed" class="mb-4" style="display: none;">
-                    <h5 class="text-secondary mb-3">📜 Recently Played</h5>
-                    <div id="recentList" class="list-group">
+                <div id="historySection" class="mb-4" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span id="recentTab" class="history-tab active me-3">📜 Recently Played</span>
+                            <span id="favoritesTab" class="history-tab">⭐ Favorites <span id="favoritesCount">(0)</span></span>
+                        </div>
+                        <div id="paginationControls" style="display: none;">
+                            <button type="button" id="prevBtn" class="btn btn-sm btn-outline-light me-2">◀</button>
+                            <span id="pageInfo" class="text-muted small"></span>
+                            <button type="button" id="nextBtn" class="btn btn-sm btn-outline-light ms-2">▶</button>
+                        </div>
+                    </div>
+                    <div id="itemList" class="list-group">
                     </div>
                 </div>
             </div>
@@ -246,6 +287,11 @@
         let currentVideoLink = '';
         let currentAudioLink = '';
         const STORAGE_KEY = 'doublePlayRecent';
+        const FAVORITES_KEY = 'doublePlayFavorites';
+        let currentPage = 0;
+        const ITEMS_PER_PAGE = 5;
+        const MAX_FAVORITES = 100;
+        let currentView = 'recent'; // 'recent' or 'favorites'
 
         // YouTube IFrame API ready callback - must be global
         window.onYouTubeIframeAPIReady = function() {
@@ -255,14 +301,110 @@
 
         // Load recently played items on page load
         window.addEventListener('DOMContentLoaded', function() {
-            loadRecentlyPlayed();
+            updateFavoritesCount();
+            loadHistoryView();
 
             // Check if YouTube API is already loaded (in case of fast load or cache)
             if (typeof YT !== 'undefined' && YT.loaded) {
                 YTReady = true;
                 console.log('YouTube API was already loaded');
             }
+
+            // Tab switching
+            document.getElementById('recentTab').addEventListener('click', function() {
+                if (currentView !== 'recent') {
+                    currentView = 'recent';
+                    currentPage = 0;
+                    document.getElementById('recentTab').classList.add('active');
+                    document.getElementById('favoritesTab').classList.remove('active');
+                    loadHistoryView();
+                }
+            });
+
+            document.getElementById('favoritesTab').addEventListener('click', function() {
+                if (currentView !== 'favorites') {
+                    currentView = 'favorites';
+                    currentPage = 0;
+                    document.getElementById('favoritesTab').classList.add('active');
+                    document.getElementById('recentTab').classList.remove('active');
+                    loadHistoryView();
+                }
+            });
+
+            // Pagination controls
+            document.getElementById('prevBtn').addEventListener('click', function() {
+                if (currentPage > 0) {
+                    currentPage--;
+                    loadHistoryView();
+                }
+            });
+
+            document.getElementById('nextBtn').addEventListener('click', function() {
+                const items = getCurrentItems();
+                const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+                if (currentPage < totalPages - 1) {
+                    currentPage++;
+                    loadHistoryView();
+                }
+            });
         });
+
+        // Get current items based on view
+        function getCurrentItems() {
+            if (currentView === 'recent') {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            } else {
+                return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+            }
+        }
+
+        // Update favorites count display
+        function updateFavoritesCount() {
+            const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+            const countElement = document.getElementById('favoritesCount');
+            if (countElement) {
+                countElement.textContent = `(${favorites.length})`;
+            }
+        }
+
+        // Check if item is already in favorites
+        function isFavorite(videoLink, audioLink) {
+            const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+            return favorites.some(item => item.videoLink === videoLink && item.audioLink === audioLink);
+        }
+
+        // Add to favorites
+        function addToFavorites(item) {
+            let favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+
+            // Check if already exists
+            if (isFavorite(item.videoLink, item.audioLink)) {
+                return;
+            }
+
+            // Add to beginning
+            favorites.unshift(item);
+
+            // Keep only last 100
+            favorites = favorites.slice(0, MAX_FAVORITES);
+
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+
+            // Update count and reload view to update button state
+            updateFavoritesCount();
+            loadHistoryView();
+        }
+
+        // Remove from favorites
+        function removeFromFavorites(videoLink, audioLink) {
+            let favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+            favorites = favorites.filter(item =>
+                !(item.videoLink === videoLink && item.audioLink === audioLink)
+            );
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+            updateFavoritesCount();
+            loadHistoryView();
+        }
 
         // Extract YouTube video ID from URL
         function getYouTubeID(url) {
@@ -314,28 +456,70 @@
                 timestamp: Date.now()
             });
 
-            // Keep only last 3
-            recent = recent.slice(0, 3);
+            // Keep only last 10
+            recent = recent.slice(0, 10);
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
-            loadRecentlyPlayed();
+
+            // Reset to first page when new item is added
+            currentPage = 0;
+            loadHistoryView();
         }
 
-        // Load and display recently played
-        function loadRecentlyPlayed() {
-            const recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            const recentList = document.getElementById('recentList');
-            const recentSection = document.getElementById('recentlyPlayed');
+        // Load and display history view (recent or favorites)
+        function loadHistoryView() {
+            const items = getCurrentItems();
+            const itemList = document.getElementById('itemList');
+            const historySection = document.getElementById('historySection');
+            const paginationControls = document.getElementById('paginationControls');
+            const pageInfo = document.getElementById('pageInfo');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
 
-            if (recent.length === 0) {
-                recentSection.style.display = 'none';
+            // Check if we should display the section
+            const recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+
+            if (recent.length === 0 && favorites.length === 0) {
+                historySection.style.display = 'none';
                 return;
             }
 
-            recentSection.style.display = 'block';
-            recentList.innerHTML = '';
+            historySection.style.display = 'block';
+            itemList.innerHTML = '';
 
-            recent.forEach((item, index) => {
+            // If current view has no items, show empty message
+            if (items.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'text-center text-muted py-3';
+                emptyMsg.textContent = currentView === 'favorites' ?
+                    'No favorites yet. Add items from Recently Played!' :
+                    'No recently played items yet.';
+                itemList.appendChild(emptyMsg);
+                paginationControls.style.display = 'none';
+                return;
+            }
+
+            // Calculate pagination
+            const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+            const startIndex = currentPage * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, items.length);
+            const itemsToShow = items.slice(startIndex, endIndex);
+
+            // Show/hide pagination controls
+            if (items.length > ITEMS_PER_PAGE) {
+                paginationControls.style.display = 'inline-block';
+                pageInfo.textContent = `${startIndex + 1}-${endIndex} of ${items.length}`;
+
+                // Enable/disable buttons based on current page
+                prevBtn.disabled = currentPage === 0;
+                nextBtn.disabled = currentPage === totalPages - 1;
+            } else {
+                paginationControls.style.display = 'none';
+            }
+
+            // Display items for current page
+            itemsToShow.forEach((item, index) => {
                 const videoID = getYouTubeID(item.videoLink);
                 const audioID = getYouTubeID(item.audioLink);
 
@@ -346,16 +530,48 @@
                 const listItem = document.createElement('a');
                 listItem.href = '#';
                 listItem.className = 'list-group-item list-group-item-action recent-item';
+
+                const isInFavorites = isFavorite(item.videoLink, item.audioLink);
+
+                // Build favorite button based on view
+                let favoriteBtn = '';
+                if (currentView === 'recent') {
+                    favoriteBtn = isInFavorites ?
+                        `<button class="btn btn-sm btn-warning favorite-btn fav-action-btn" disabled>⭐ Favorited</button>` :
+                        `<button class="btn btn-sm btn-outline-warning favorite-btn fav-action-btn" data-action="add">⭐ Add</button>`;
+                } else {
+                    favoriteBtn = `<button class="btn btn-sm btn-danger favorite-btn fav-action-btn" data-action="remove">🗑️ Remove</button>`;
+                }
+
                 listItem.innerHTML = `
                     <div class="d-flex w-100 justify-content-between align-items-start">
-                        <div style="flex: 1; min-width: 0;">
+                        <div style="flex: 1; min-width: 0; margin-right: 10px;">
                             <small class="text-muted text-truncate d-block">🎬 Video: ${escapeHtml(videoDisplay)}</small>
                             <small class="text-muted text-truncate d-block">🔊 Audio: ${escapeHtml(audioDisplay)}</small>
                         </div>
-                        <small class="text-muted ms-2" style="white-space: nowrap;">${formatTimestamp(item.timestamp)}</small>
+                        <div class="d-flex align-items-center gap-2" style="flex-shrink: 0;">
+                            ${currentView === 'recent' ? `<small class="text-muted" style="white-space: nowrap;">${formatTimestamp(item.timestamp)}</small>` : ''}
+                            ${favoriteBtn}
+                        </div>
                     </div>
                 `;
 
+                // Add event listener for favorite button
+                const favBtn = listItem.querySelector('.fav-action-btn');
+                if (favBtn && !favBtn.disabled) {
+                    favBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const action = this.getAttribute('data-action');
+                        if (action === 'add') {
+                            addToFavorites(item);
+                        } else if (action === 'remove') {
+                            removeFromFavorites(item.videoLink, item.audioLink);
+                        }
+                    });
+                }
+
+                // Add event listener for clicking the item
                 listItem.addEventListener('click', function(e) {
                     e.preventDefault();
                     document.getElementById('videoLink').value = item.videoLink;
@@ -364,7 +580,7 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
 
-                recentList.appendChild(listItem);
+                itemList.appendChild(listItem);
             });
         }
 
@@ -570,7 +786,7 @@
                 recent[0].videoTitle = newVideoTitle || newVideoID;
 
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(recent));
-                loadRecentlyPlayed();
+                loadHistoryView();
             }
 
             // Hide form and clear input

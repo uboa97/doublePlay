@@ -12,7 +12,17 @@ Double Play is a web application that allows users to simultaneously play video 
 - **Timestamp Navigation**: Jump to specific timestamps in the audio track (video continues playing normally) using flexible input formats (seconds, mm:ss, or hh:mm:ss)
 
 ### User Experience Features
-- **Recently Played History**: Stores last 3 video pairs in localStorage with video titles
+- **Recently Played History**: Stores last 10 video pairs in localStorage with video titles
+  - Displays 5 items per page
+  - Pagination controls (left/right arrows) appear when more than 5 items exist
+  - Shows current range (e.g., "1-5 of 10")
+  - Can add items to Favorites list
+- **Favorites**: Save up to 100 favorite video pairs
+  - Tab-based interface to switch between Recently Played and Favorites
+  - Add items from Recently Played with ⭐ Add button
+  - Remove items from Favorites with 🗑️ Remove button
+  - Shares same pagination system (5 items per page)
+  - Stored separately in localStorage
 - **Video Title Fetching**: Uses YouTube oEmbed API to display actual video titles instead of IDs
 - **Current Time Display**: Shows current playback position and total duration (e.g., "⏱ 1:30 / 5:42")
 - **Responsive Layout**: Wide layout (1600px max-width) for optimal video viewing
@@ -48,14 +58,35 @@ Double Play is a web application that allows users to simultaneously play video 
 - Calls `getCurrentTime()` and `getDuration()` from YouTube API
 - Formats time as mm:ss or hh:mm:ss depending on duration
 
-#### Recently Played
-- Fetches video titles asynchronously when "Double Play" is clicked
-- Stores up to 3 most recent pairs with:
-  - `videoLink`, `audioLink`: Full YouTube URLs
-  - `videoTitle`, `audioTitle`: Human-readable titles
-  - `timestamp`: When the pair was played (for "X ago" display)
-- Deduplicates entries (same pair moves to top)
-- Clicking a recent item auto-fills the input fields
+#### History View (Recently Played & Favorites)
+- **Tab System**:
+  - `currentView` variable tracks active tab ('recent' or 'favorites')
+  - Clicking a tab switches view and resets to page 0
+  - Active tab highlighted with blue background
+- **Recently Played**:
+  - Fetches video titles asynchronously when "Double Play" is clicked
+  - Stores up to 10 most recent pairs with:
+    - `videoLink`, `audioLink`: Full YouTube URLs
+    - `videoTitle`, `audioTitle`: Human-readable titles
+    - `timestamp`: When the pair was played (for "X ago" display)
+  - Deduplicates entries (same pair moves to top)
+  - Shows ⭐ Add button (or ⭐ Favorited if already in favorites)
+- **Favorites**:
+  - Stores up to 100 favorite pairs (`MAX_FAVORITES` constant)
+  - Same data structure as recently played
+  - Shows 🗑️ Remove button for each item
+  - `isFavorite()` checks if item exists in favorites
+  - `addToFavorites()` adds item and updates view
+  - `removeFromFavorites()` removes item and reloads view
+- **Shared Features**:
+  - Clicking any item auto-fills the input fields
+  - Pagination system:
+    - Displays 5 items per page (`ITEMS_PER_PAGE` constant)
+    - Tracks current page with `currentPage` variable
+    - Shows/hides pagination controls based on total items
+    - Left/right arrow buttons navigate between pages
+    - Buttons are disabled at boundaries (first/last page)
+    - Resets to page 0 when switching tabs or adding new items
 
 ### Video Title Fetching
 Uses YouTube's oEmbed endpoint (no API key required):
@@ -88,12 +119,32 @@ Supports various YouTube URL formats via regex:
 - `.audio-player`: Hidden, off-screen, non-interactive
 - `.btn-custom`: Rounded button styling
 - `.recent-item`: Hover effects for recently played items
+- `.history-tab`: Tab styling for Recently Played and Favorites
+- `.history-tab.active`: Active tab styling (blue background)
+- `.favorite-btn`: Styling for favorite add/remove buttons
 
 ## localStorage Schema
 
+### Recently Played
 **Key**: `doublePlayRecent`
 
-**Value**: JSON array of objects (max 3 items):
+**Value**: JSON array of objects (max 10 items):
+```json
+[
+  {
+    "videoLink": "https://youtube.com/watch?v=...",
+    "audioLink": "https://youtube.com/watch?v=...",
+    "videoTitle": "Video Title Here",
+    "audioTitle": "Audio Title Here",
+    "timestamp": 1699564800000
+  }
+]
+```
+
+### Favorites
+**Key**: `doublePlayFavorites`
+
+**Value**: JSON array of objects (max 100 items):
 ```json
 [
   {
@@ -117,13 +168,14 @@ Supports various YouTube URL formats via regex:
 ## Future Enhancement Ideas
 
 - Add visual progress bar/seek slider
-- Allow saving favorite pairs with custom names
+- Allow custom names/notes for favorites
 - Volume controls for audio player
 - Playback speed controls
 - Loop functionality
-- Export/import recently played list
-- Show video thumbnails in recently played
+- Export/import favorites and recently played lists
+- Show video thumbnails in history view
 - Keyboard shortcuts (space for play/pause, arrow keys for seek)
+- Search/filter functionality for favorites
 
 ## Browser Compatibility
 

@@ -10,3 +10,9 @@
 
 # Logs
 *.log
+
+# Server script
+server.sh
+
+# Project documentation
+CLAUDE.md
