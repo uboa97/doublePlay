@@ -184,3 +184,8 @@ Tested and working in modern browsers that support:
 - YouTube IFrame API
 - localStorage
 - Fetch API
+
+## Contact
+
+- **Email**: uboa97@gmail.com
+- **GitHub**: [github.com/uboa97/doublePlay](https://github.com/uboa97/doublePlay)
