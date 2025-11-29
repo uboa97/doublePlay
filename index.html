@@ -14,7 +14,7 @@
             color: #e4e4e4;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
         }
         .card {
             border-radius: 15px;
@@ -186,6 +186,11 @@
         .favorite-btn:hover {
             transform: scale(1.1);
         }
+        .size-btn.active {
+            background-color: #667eea;
+            border-color: #667eea;
+            color: #ffffff;
+        }
     </style>
 </head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-WJ1R5J2RT0"></script>
@@ -202,9 +207,15 @@
         <p class="text-center text-muted mb-4">Play video from one YouTube link while listening to audio from another simultaneously</p>
 
         <div id="playerContainer" class="control-buttons">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="text-secondary mb-0">🎬 Video (Muted)</h6>
-                        <button type="button" id="changeVideoBtn" class="btn btn-sm btn-outline-light">Change Video</button>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="text-muted small me-2">Size:</span>
+                            <button type="button" id="sizeSmall" class="btn btn-sm btn-outline-light size-btn" data-size="910" title="Small (910px)">S</button>
+                            <button type="button" id="sizeMedium" class="btn btn-sm btn-outline-light size-btn" data-size="1100" title="Medium (1100px)">M</button>
+                            <button type="button" id="sizeLarge" class="btn btn-sm btn-outline-light size-btn active" data-size="1600" title="Large (1600px)">L</button>
+                            <button type="button" id="changeVideoBtn" class="btn btn-sm btn-outline-light ms-2">Change Video</button>
+                        </div>
                     </div>
                     <div id="changeVideoForm" class="mb-2" style="display: none;">
                         <div class="d-flex gap-2">
@@ -217,7 +228,6 @@
                         <div id="videoPlayer"></div>
                     </div>
 
-                    <h6 class="text-secondary mb-2">🔊 Audio Vid</h6>
                     <div class="audio-controls-container">
                         <div class="skip-buttons-left">
                             <button type="button" id="skip-10" class="btn btn-outline-light btn-skip">⏪ -10s</button>
@@ -300,11 +310,27 @@
         const ITEMS_PER_PAGE = 5;
         const MAX_FAVORITES = 100;
         let currentView = 'recent'; // 'recent' or 'favorites'
+        const SIZE_KEY = 'doublePlayContainerSize';
 
         // YouTube IFrame API ready callback - must be global
         window.onYouTubeIframeAPIReady = function() {
             YTReady = true;
             console.log('YouTube API is ready');
+        }
+
+        // Set container size
+        function setContainerSize(size) {
+            const container = document.querySelector('.container');
+            container.style.maxWidth = size + 'px';
+            localStorage.setItem(SIZE_KEY, size);
+
+            // Update active button state
+            document.querySelectorAll('.size-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-size') === String(size)) {
+                    btn.classList.add('active');
+                }
+            });
         }
 
         // Load recently played items on page load
@@ -316,6 +342,12 @@
             if (typeof YT !== 'undefined' && YT.loaded) {
                 YTReady = true;
                 console.log('YouTube API was already loaded');
+            }
+
+            // Load saved container size
+            const savedSize = localStorage.getItem(SIZE_KEY);
+            if (savedSize) {
+                setContainerSize(parseInt(savedSize));
             }
 
             // Check for URL parameters to auto-load videos
@@ -872,6 +904,14 @@
                 // Fallback if clipboard API fails
                 alert(`Share this link:\n\n${shareURL}`);
             }
+        });
+
+        // Size button event listeners
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const size = parseInt(this.getAttribute('data-size'));
+                setContainerSize(size);
+            });
         });
     </script>
     <script src="https://www.youtube.com/iframe_api"></script>
