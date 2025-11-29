@@ -193,6 +193,26 @@
         }
     </style>
 </head>
+<!-- Intro Modal -->
+<div class="modal fade" id="introModal" tabindex="-1" aria-labelledby="introModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="background-color: #2b2b3d; border: 1px solid #3d3d54;">
+            <div class="modal-header" style="border-bottom: 1px solid #3d3d54;">
+                <h5 class="modal-title" id="introModalLabel" style="color: #667eea;">Welcome to Double Play! 🎬</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="color: #e4e4e4;">
+                <p class="mb-3">Play video from one YouTube link while listening to another simultaneously. Great for staying engaged and focused while enjoying podcasts/music/lectures!</p>
+                <div class="ratio ratio-16x9">
+                    <video src="https://i.imgur.com/ROTwK3e.mp4" autoplay loop muted playsinline style="border-radius: 10px; clip-path: inset(3px 0px 3px 0px);"></video>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #3d3d54;">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Get Started</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-WJ1R5J2RT0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -298,6 +318,9 @@
         // Base URL for sharing - change to 'https://doubleplayapp.xyz' for production
         const BASE_URL = 'https://doubleplayapp.xyz';
 
+        // Set to true to always show intro modal (for testing) - set to false for production
+        const ALWAYS_SHOW_INTRO = false;
+
         let videoPlayer = null;
         let audioPlayer = null;
         let YTReady = false;
@@ -311,6 +334,7 @@
         const MAX_FAVORITES = 100;
         let currentView = 'recent'; // 'recent' or 'favorites'
         const SIZE_KEY = 'doublePlayContainerSize';
+        const INTRO_SEEN_KEY = 'doublePlayIntroSeen';
 
         // YouTube IFrame API ready callback - must be global
         window.onYouTubeIframeAPIReady = function() {
@@ -348,6 +372,20 @@
             const savedSize = localStorage.getItem(SIZE_KEY);
             if (savedSize) {
                 setContainerSize(parseInt(savedSize));
+            }
+
+            // Show intro modal on first visit (or always if ALWAYS_SHOW_INTRO is true)
+            const hasSeenIntro = localStorage.getItem(INTRO_SEEN_KEY);
+            if (ALWAYS_SHOW_INTRO || !hasSeenIntro) {
+                const introModal = new bootstrap.Modal(document.getElementById('introModal'));
+                introModal.show();
+
+                // Mark intro as seen when modal is closed (unless ALWAYS_SHOW_INTRO is true)
+                if (!ALWAYS_SHOW_INTRO) {
+                    document.getElementById('introModal').addEventListener('hidden.bs.modal', function() {
+                        localStorage.setItem(INTRO_SEEN_KEY, 'true');
+                    });
+                }
             }
 
             // Check for URL parameters to auto-load videos
