@@ -232,9 +232,14 @@
                         </div>
                     </div>
 
-                    <div class="text-center mt-3 mb-4">
+                    <div class="text-center mt-3 mb-2">
                         <button type="button" id="playPauseBothBtn" class="btn btn-success btn-lg btn-custom btn-fixed-width">
                             ⏸ Pause Both
+                        </button>
+                    </div>
+                    <div class="text-center mb-4">
+                        <button type="button" id="shareBtn" class="btn btn-outline-info btn-sm btn-custom">
+                            🔗 Share
                         </button>
                     </div>
                 </div>
@@ -280,6 +285,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Base URL for sharing - change to 'https://doubleplayapp.xyz' for production
+        const BASE_URL = 'https://doubleplayapp.xyz';
+
         let videoPlayer = null;
         let audioPlayer = null;
         let YTReady = false;
@@ -308,6 +316,32 @@
             if (typeof YT !== 'undefined' && YT.loaded) {
                 YTReady = true;
                 console.log('YouTube API was already loaded');
+            }
+
+            // Check for URL parameters to auto-load videos
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoParam = urlParams.get('v');
+            const audioParam = urlParams.get('a');
+
+            if (videoParam && audioParam) {
+                // Construct full YouTube URLs from video IDs
+                const videoURL = `https://www.youtube.com/watch?v=${videoParam}`;
+                const audioURL = `https://www.youtube.com/watch?v=${audioParam}`;
+
+                // Pre-fill the input fields
+                document.getElementById('videoLink').value = videoURL;
+                document.getElementById('audioLink').value = audioURL;
+
+                // Wait for YouTube API to be ready, then auto-play
+                const checkAPIAndPlay = setInterval(() => {
+                    if (YTReady) {
+                        clearInterval(checkAPIAndPlay);
+                        // Trigger the Double Play button automatically
+                        setTimeout(() => {
+                            document.getElementById('doublePlayBtn').click();
+                        }, 500);
+                    }
+                }, 100);
             }
 
             // Tab switching
@@ -798,6 +832,45 @@
         document.getElementById('newVideoInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 document.getElementById('submitNewVideoBtn').click();
+            }
+        });
+
+        // Share button - generate shareable link
+        document.getElementById('shareBtn').addEventListener('click', async function() {
+            if (!currentVideoLink || !currentAudioLink) {
+                alert('No videos loaded to share');
+                return;
+            }
+
+            const videoID = getYouTubeID(currentVideoLink);
+            const audioID = getYouTubeID(currentAudioLink);
+
+            if (!videoID || !audioID) {
+                alert('Error generating share link');
+                return;
+            }
+
+            // Generate share URL
+            const shareURL = `${BASE_URL}/?v=${videoID}&a=${audioID}`;
+
+            // Copy to clipboard
+            try {
+                await navigator.clipboard.writeText(shareURL);
+
+                // Visual feedback - change button text temporarily
+                const originalText = this.innerHTML;
+                this.innerHTML = '✓ Link Copied!';
+                this.classList.remove('btn-outline-info');
+                this.classList.add('btn-success');
+
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-outline-info');
+                }, 2000);
+            } catch (err) {
+                // Fallback if clipboard API fails
+                alert(`Share this link:\n\n${shareURL}`);
             }
         });
     </script>
