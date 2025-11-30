@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiView - Watch Multiple Streams</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e4e4e4;
+        }
+        .container {
+            max-width: 1800px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background-color: #2b2b3d;
+            border: 1px solid #3d3d54;
+        }
+        .card-body {
+            background-color: #2b2b3d;
+            border-radius: 15px;
+        }
+        .form-control, .form-select {
+            background-color: #353548;
+            border-color: #4a4a5e;
+            color: #e4e4e4;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #3d3d54;
+            border-color: #667eea;
+            color: #e4e4e4;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+        .form-control::placeholder {
+            color: #888899;
+        }
+        .form-label {
+            color: #e4e4e4;
+        }
+        .form-select option {
+            background-color: #353548;
+            color: #e4e4e4;
+        }
+        .btn-custom {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .video-grid {
+            display: grid;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .video-grid.grid-1 {
+            grid-template-columns: 1fr;
+        }
+        .video-grid.grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .video-grid.grid-3 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .video-grid.grid-4 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .video-grid.grid-5,
+        .video-grid.grid-6 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        @media (max-width: 1200px) {
+            .video-grid.grid-3,
+            .video-grid.grid-4,
+            .video-grid.grid-5,
+            .video-grid.grid-6 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .video-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        .stream-container {
+            position: relative;
+            background-color: #2b2b3d;
+            border-radius: 15px;
+            border: 1px solid #3d3d54;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .stream-header {
+            background-color: #353548;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #4a4a5e;
+        }
+        .stream-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e4e4e4;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .platform-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .platform-badge.youtube {
+            background-color: #ff0000;
+            color: white;
+        }
+        .platform-badge.kick {
+            background-color: #53fc18;
+            color: #000;
+        }
+        .platform-badge.twitch {
+            background-color: #9146ff;
+            color: white;
+        }
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .remove-btn:hover {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        .stream-iframe-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        .stream-iframe-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .text-primary {
+            color: #667eea !important;
+        }
+        .text-muted {
+            color: #9999aa !important;
+        }
+        h1 {
+            color: #e4e4e4;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9999aa;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-2 mt-4 text-primary">📺 MultiView</h1>
+        <p class="text-center text-muted mb-4">Watch multiple streams from YouTube, Kick, and Twitch simultaneously</p>
+
+        <div class="card">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="platformSelect" class="form-label fw-bold">Platform</label>
+                        <select class="form-select" id="platformSelect">
+                            <option value="youtube">YouTube</option>
+                            <option value="kick">Kick</option>
+                            <option value="twitch">Twitch</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label for="streamInput" class="form-label fw-bold">
+                            <span id="inputLabel">YouTube Video Link</span>
+                        </label>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control" id="streamInput" placeholder="Paste YouTube URL here">
+                            <button type="button" id="addStreamBtn" class="btn btn-primary btn-custom">
+                                ➕ Add Stream
+                            </button>
+                        </div>
+                        <small class="form-text text-muted" id="inputHelp">Enter the full YouTube video URL</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="videoGrid" class="video-grid"></div>
+
+        <div id="emptyState" class="empty-state">
+            <div class="empty-state-icon">📺</div>
+            <h4>No Streams Added Yet</h4>
+            <p class="text-muted">Add your first stream using the form above</p>
+        </div>
+    </div>
+
+    <footer class="text-center mt-5 pb-4">
+        <div class="text-muted small" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 1.2rem;">✉️</span>
+            <a href="mailto:uboa97@gmail.com" class="text-decoration-none" style="color: #667eea; font-weight: 600;">uboa97@gmail.com</a>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let streams = [];
+        let streamIdCounter = 0;
+
+        const platformSelect = document.getElementById('platformSelect');
+        const streamInput = document.getElementById('streamInput');
+        const inputLabel = document.getElementById('inputLabel');
+        const inputHelp = document.getElementById('inputHelp');
+        const addStreamBtn = document.getElementById('addStreamBtn');
+        const videoGrid = document.getElementById('videoGrid');
+        const emptyState = document.getElementById('emptyState');
+
+        // Update input placeholder and label based on selected platform
+        platformSelect.addEventListener('change', function() {
+            const platform = this.value;
+            updateInputPlaceholder(platform);
+        });
+
+        function updateInputPlaceholder(platform) {
+            switch(platform) {
+                case 'youtube':
+                    inputLabel.textContent = 'YouTube Video Link';
+                    streamInput.placeholder = 'Paste YouTube URL here';
+                    inputHelp.textContent = 'Enter the full YouTube video URL';
+                    break;
+                case 'kick':
+                    inputLabel.textContent = 'Kick Username';
+                    streamInput.placeholder = 'Enter Kick username (e.g., xqc)';
+                    inputHelp.textContent = 'Enter the streamer\'s username on Kick';
+                    break;
+                case 'twitch':
+                    inputLabel.textContent = 'Twitch Username';
+                    streamInput.placeholder = 'Enter Twitch username (e.g., xqc)';
+                    inputHelp.textContent = 'Enter the streamer\'s username on Twitch';
+                    break;
+            }
+        }
+
+        // Extract YouTube video ID from URL
+        function getYouTubeID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        // Generate iframe URL based on platform
+        function generateIframeURL(platform, input) {
+            switch(platform) {
+                case 'youtube':
+                    const videoID = getYouTubeID(input);
+                    if (!videoID) return null;
+                    return `https://www.youtube.com/embed/${videoID}?autoplay=1&rel=0`;
+                case 'kick':
+                    // Remove any @ symbol and whitespace
+                    const kickUsername = input.replace('@', '').trim();
+                    if (!kickUsername) return null;
+                    return `https://player.kick.com/${kickUsername}`;
+                case 'twitch':
+                    // Remove any @ symbol and whitespace
+                    const twitchUsername = input.replace('@', '').trim();
+                    if (!twitchUsername) return null;
+                    return `https://player.twitch.tv/?channel=${twitchUsername}&parent=localhost`;
+                default:
+                    return null;
+            }
+        }
+
+        // Get display name for stream
+        function getStreamDisplayName(platform, input) {
+            switch(platform) {
+                case 'youtube':
+                    const videoID = getYouTubeID(input);
+                    return videoID || input;
+                case 'kick':
+                case 'twitch':
+                    return input.replace('@', '').trim();
+                default:
+                    return input;
+            }
+        }
+
+        // Create stream element
+        function createStreamElement(stream) {
+            const streamContainer = document.createElement('div');
+            streamContainer.className = 'stream-container';
+            streamContainer.setAttribute('data-stream-id', stream.id);
+            streamContainer.innerHTML = `
+                <div class="stream-header">
+                    <div class="stream-title">
+                        <span class="platform-badge ${stream.platform}">${stream.platform}</span>
+                        <span>${escapeHtml(stream.displayName)}</span>
+                    </div>
+                    <button class="remove-btn" onclick="removeStream(${stream.id})" title="Remove stream">×</button>
+                </div>
+                <div class="stream-iframe-container">
+                    <iframe src="${stream.iframeURL}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+                </div>
+            `;
+            return streamContainer;
+        }
+
+        // Update grid class based on number of streams
+        function updateGridClass() {
+            videoGrid.classList.remove('grid-1', 'grid-2', 'grid-3', 'grid-4', 'grid-5', 'grid-6');
+            if (streams.length > 0) {
+                const gridClass = `grid-${Math.min(streams.length, 6)}`;
+                videoGrid.classList.add(gridClass);
+            }
+        }
+
+        // Update empty state visibility
+        function updateEmptyState() {
+            emptyState.style.display = streams.length === 0 ? 'block' : 'none';
+        }
+
+        // Add stream
+        addStreamBtn.addEventListener('click', function() {
+            const platform = platformSelect.value;
+            const input = streamInput.value.trim();
+
+            if (!input) {
+                alert('Please enter a stream URL or username');
+                return;
+            }
+
+            const iframeURL = generateIframeURL(platform, input);
+            if (!iframeURL) {
+                alert('Invalid input. Please check the URL or username and try again.');
+                return;
+            }
+
+            const displayName = getStreamDisplayName(platform, input);
+            const streamId = streamIdCounter++;
+
+            const stream = {
+                id: streamId,
+                platform: platform,
+                displayName: displayName,
+                iframeURL: iframeURL
+            };
+
+            streams.push(stream);
+
+            // Create and append only the new stream element
+            const streamElement = createStreamElement(stream);
+            videoGrid.appendChild(streamElement);
+
+            // Update grid layout and empty state
+            updateGridClass();
+            updateEmptyState();
+
+            // Clear input
+            streamInput.value = '';
+            streamInput.focus();
+        });
+
+        // Allow Enter key to add stream
+        streamInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addStreamBtn.click();
+            }
+        });
+
+        // Remove stream
+        function removeStream(streamId) {
+            // Remove from streams array
+            streams = streams.filter(s => s.id !== streamId);
+
+            // Remove only the specific DOM element
+            const streamElement = videoGrid.querySelector(`[data-stream-id="${streamId}"]`);
+            if (streamElement) {
+                streamElement.remove();
+            }
+
+            // Update grid layout and empty state
+            updateGridClass();
+            updateEmptyState();
+        }
+
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Make removeStream available globally
+        window.removeStream = removeStream;
+
+        // Initialize
+        updateInputPlaceholder('youtube');
+    </script>
+</body>
+</html>
