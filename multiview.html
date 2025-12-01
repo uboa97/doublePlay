@@ -268,10 +268,88 @@
                 min-width: 150px;
             }
         }
+        /* Recently Watched Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background-color: #1a1a2e;
+            border-right: 1px solid #3d3d54;
+            overflow-y: auto;
+            padding: 20px 15px;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3d3d54;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .recently-watched-item {
+            background-color: #2b2b3d;
+            border: 1px solid #3d3d54;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .recently-watched-item:hover {
+            background-color: #353548;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+        .recently-watched-platform {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+        .recently-watched-name {
+            font-size: 13px;
+            color: #e4e4e4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .sidebar-empty {
+            text-align: center;
+            color: #9999aa;
+            font-size: 13px;
+            margin-top: 40px;
+        }
+        .main-content-with-sidebar {
+            margin-left: 280px;
+        }
+        @media (max-width: 992px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content-with-sidebar {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Recently Watched Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            📜 Recently Watched
+        </div>
+        <div id="recentlyWatchedList">
+            <div class="sidebar-empty">No streams yet</div>
+        </div>
+    </div>
+
+    <div class="container main-content-with-sidebar">
         <div class="text-center mb-2 mt-4">
             <a href="index.html" class="btn btn-sm btn-outline-light">🎬 Double Play</a>
         </div>
@@ -361,7 +439,10 @@
         const videoGrid = document.getElementById('videoGrid');
         const emptyState = document.getElementById('emptyState');
         const focusModeToggle = document.getElementById('focusModeToggle');
+        const recentlyWatchedList = document.getElementById('recentlyWatchedList');
         const PLATFORM_KEY = 'multiviewLastPlatform';
+        const RECENTLY_WATCHED_KEY = 'multiviewRecentlyWatched';
+        const MAX_RECENTLY_WATCHED = 50;
 
         // Update input placeholder and label based on selected platform
         platformSelect.addEventListener('change', function() {
@@ -392,6 +473,127 @@
                     inputHelp.textContent = 'Enter the streamer\'s username on Twitch';
                     break;
             }
+        }
+
+        // Recently Watched Functions
+        function getRecentlyWatched() {
+            try {
+                const stored = localStorage.getItem(RECENTLY_WATCHED_KEY);
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                console.error('Error loading recently watched:', e);
+                return [];
+            }
+        }
+
+        function saveToRecentlyWatched(platform, input, displayName, iframeURL) {
+            try {
+                let recentlyWatched = getRecentlyWatched();
+
+                // Create new entry
+                const newEntry = {
+                    platform: platform,
+                    input: input,
+                    displayName: displayName,
+                    iframeURL: iframeURL,
+                    timestamp: Date.now()
+                };
+
+                // Check if this exact stream already exists (by iframeURL)
+                const existingIndex = recentlyWatched.findIndex(item => item.iframeURL === iframeURL);
+                if (existingIndex !== -1) {
+                    // Remove the existing entry so we can add it to the front
+                    recentlyWatched.splice(existingIndex, 1);
+                }
+
+                // Add to front of array
+                recentlyWatched.unshift(newEntry);
+
+                // Keep only the most recent MAX_RECENTLY_WATCHED items (FIFO)
+                if (recentlyWatched.length > MAX_RECENTLY_WATCHED) {
+                    recentlyWatched = recentlyWatched.slice(0, MAX_RECENTLY_WATCHED);
+                }
+
+                localStorage.setItem(RECENTLY_WATCHED_KEY, JSON.stringify(recentlyWatched));
+
+                // Re-render the list
+                renderRecentlyWatched();
+            } catch (e) {
+                console.error('Error saving to recently watched:', e);
+            }
+        }
+
+        function renderRecentlyWatched() {
+            const recentlyWatched = getRecentlyWatched();
+
+            if (recentlyWatched.length === 0) {
+                recentlyWatchedList.innerHTML = '<div class="sidebar-empty">No streams yet</div>';
+                return;
+            }
+
+            recentlyWatchedList.innerHTML = '';
+            recentlyWatched.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'recently-watched-item';
+                itemDiv.innerHTML = `
+                    <div class="recently-watched-platform">
+                        <span class="platform-badge ${item.platform}">${item.platform}</span>
+                    </div>
+                    <div class="recently-watched-name" title="${escapeHtml(item.displayName)}">
+                        ${escapeHtml(item.displayName)}
+                    </div>
+                `;
+
+                // Add click handler to add this stream
+                itemDiv.addEventListener('click', function() {
+                    addStreamFromRecent(item);
+                });
+
+                recentlyWatchedList.appendChild(itemDiv);
+            });
+        }
+
+        function addStreamFromRecent(item) {
+            // Check if this stream is already being watched
+            const alreadyWatching = streams.some(s => s.iframeURL === item.iframeURL);
+            if (alreadyWatching) {
+                alert('This stream is already being watched!');
+                return;
+            }
+
+            const streamId = streamIdCounter++;
+
+            const stream = {
+                id: streamId,
+                platform: item.platform,
+                displayName: item.displayName,
+                iframeURL: item.iframeURL
+            };
+
+            streams.push(stream);
+
+            // Create and append the new stream element
+            const streamElement = createStreamElement(stream);
+            videoGrid.appendChild(streamElement);
+
+            // If in focus mode, add click handler to new stream
+            if (focusMode) {
+                streamElement.setAttribute('data-focus-handler', 'true');
+                streamElement.addEventListener('click', function() {
+                    const streamId = parseInt(this.getAttribute('data-stream-id'));
+                    if (!this.classList.contains('focused')) {
+                        switchFocus(streamId);
+                    }
+                });
+            } else {
+                updateGridClass();
+            }
+
+            // Update empty state
+            updateEmptyState();
+
+            // Move this item to the top of recently watched
+            saveToRecentlyWatched(item.platform, item.input, item.displayName, item.iframeURL);
         }
 
         // Extract YouTube video ID from URL
@@ -607,6 +809,9 @@
             // Update empty state
             updateEmptyState();
 
+            // Save to recently watched
+            saveToRecentlyWatched(platform, input, displayName, iframeURL);
+
             // Clear input
             streamInput.value = '';
 
@@ -701,6 +906,9 @@
         const initialPlatform = getSavedPlatform();
         platformSelect.value = initialPlatform;
         updateInputPlaceholder(initialPlatform);
+
+        // Initialize recently watched list
+        renderRecentlyWatched();
     </script>
 </body>
 </html>
