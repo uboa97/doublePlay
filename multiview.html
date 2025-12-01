@@ -554,8 +554,15 @@
         }
 
         function addStreamFromRecent(item) {
+            // Regenerate the iframe URL with current parameters (ensures mute is applied)
+            const iframeURL = generateIframeURL(item.platform, item.input);
+            if (!iframeURL) {
+                alert('Unable to load this stream');
+                return;
+            }
+
             // Check if this stream is already being watched
-            const alreadyWatching = streams.some(s => s.iframeURL === item.iframeURL);
+            const alreadyWatching = streams.some(s => s.iframeURL === iframeURL);
             if (alreadyWatching) {
                 alert('This stream is already being watched!');
                 return;
@@ -567,7 +574,7 @@
                 id: streamId,
                 platform: item.platform,
                 displayName: item.displayName,
-                iframeURL: item.iframeURL
+                iframeURL: iframeURL
             };
 
             streams.push(stream);
@@ -592,8 +599,8 @@
             // Update empty state
             updateEmptyState();
 
-            // Move this item to the top of recently watched
-            saveToRecentlyWatched(item.platform, item.input, item.displayName, item.iframeURL);
+            // Move this item to the top of recently watched (with updated URL)
+            saveToRecentlyWatched(item.platform, item.input, item.displayName, iframeURL);
         }
 
         // Extract YouTube video ID from URL
@@ -609,17 +616,17 @@
                 case 'youtube':
                     const videoID = getYouTubeID(input);
                     if (!videoID) return null;
-                    return `https://www.youtube.com/embed/${videoID}?autoplay=1&rel=0`;
+                    return `https://www.youtube.com/embed/${videoID}?autoplay=1&mute=1&rel=0`;
                 case 'kick':
                     // Remove any @ symbol and whitespace
                     const kickUsername = input.replace('@', '').trim();
                     if (!kickUsername) return null;
-                    return `https://player.kick.com/${kickUsername}`;
+                    return `https://player.kick.com/${kickUsername}?muted=true`;
                 case 'twitch':
                     // Remove any @ symbol and whitespace
                     const twitchUsername = input.replace('@', '').trim();
                     if (!twitchUsername) return null;
-                    return `https://player.twitch.tv/?channel=${twitchUsername}&parent=localhost`;
+                    return `https://player.twitch.tv/?channel=${twitchUsername}&parent=localhost&muted=true`;
                 default:
                     return null;
             }
@@ -653,7 +660,7 @@
                     <button class="remove-btn" title="Remove stream">×</button>
                 </div>
                 <div class="stream-iframe-container">
-                    <iframe src="${stream.iframeURL}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+                    <iframe src="${stream.iframeURL}" allowfullscreen allow="autoplay; encrypted-media" muted></iframe>
                 </div>
             `;
 
