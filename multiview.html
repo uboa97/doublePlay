@@ -14,7 +14,7 @@
             color: #e4e4e4;
         }
         .container {
-            max-width: 1800px;
+            max-width: 1600px;
         }
         .card {
             border-radius: 15px;
@@ -55,37 +55,38 @@
             letter-spacing: 1px;
         }
         .video-grid {
-            display: grid;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 20px;
             margin-top: 30px;
         }
-        .video-grid.grid-1 {
-            grid-template-columns: 1fr;
+        /* 1 stream: full width */
+        .video-grid.grid-1 .stream-container {
+            width: 100%;
         }
-        .video-grid.grid-2 {
-            grid-template-columns: repeat(2, 1fr);
+        /* 2-4 streams: 2 per row */
+        .video-grid.grid-2 .stream-container,
+        .video-grid.grid-3 .stream-container,
+        .video-grid.grid-4 .stream-container {
+            width: calc(50% - 10px);
         }
-        .video-grid.grid-3 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        .video-grid.grid-4 {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        .video-grid.grid-5,
-        .video-grid.grid-6 {
-            grid-template-columns: repeat(3, 1fr);
+        /* 5-6+ streams: 3 per row */
+        .video-grid.grid-5 .stream-container,
+        .video-grid.grid-6 .stream-container {
+            width: calc(33.333% - 14px);
         }
         @media (max-width: 1200px) {
-            .video-grid.grid-3,
-            .video-grid.grid-4,
-            .video-grid.grid-5,
-            .video-grid.grid-6 {
-                grid-template-columns: repeat(2, 1fr);
+            .video-grid.grid-3 .stream-container,
+            .video-grid.grid-4 .stream-container,
+            .video-grid.grid-5 .stream-container,
+            .video-grid.grid-6 .stream-container {
+                width: calc(50% - 10px);
             }
         }
         @media (max-width: 768px) {
-            .video-grid {
-                grid-template-columns: 1fr !important;
+            .video-grid .stream-container {
+                width: 100% !important;
             }
         }
         .stream-container {
@@ -185,46 +186,156 @@
             margin-bottom: 20px;
             opacity: 0.5;
         }
+        .modal-content {
+            background-color: #2b2b3d;
+            border: 1px solid #3d3d54;
+        }
+        .modal-header {
+            border-bottom: 1px solid #3d3d54;
+        }
+        .modal-title {
+            color: #e4e4e4;
+            font-weight: 600;
+        }
+        .modal-footer {
+            border-top: 1px solid #3d3d54;
+        }
+        .btn-close {
+            filter: invert(1);
+        }
+        /* Color-coded platform select - use background color on the select itself */
+        #platformSelect {
+            transition: background-color 0.2s ease;
+        }
+        #platformSelect[data-platform="youtube"] {
+            background-color: #ff0000 !important;
+            color: white !important;
+            border-color: #ff0000;
+        }
+        #platformSelect[data-platform="twitch"] {
+            background-color: #9146ff !important;
+            color: white !important;
+            border-color: #9146ff;
+        }
+        #platformSelect[data-platform="kick"] {
+            background-color: #53fc18 !important;
+            color: #000 !important;
+            border-color: #53fc18;
+        }
+        #addStreamFloatingBtn {
+            display: none;
+            margin: 30px auto;
+            padding: 15px 40px;
+        }
+        #focusModeToggle {
+            display: none;
+            margin: 20px auto 10px;
+        }
+        /* Focus Mode Layout - using order instead of moving DOM */
+        .video-grid.focus-mode {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .video-grid.focus-mode .stream-container {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.3s ease, order 0.3s ease;
+        }
+        .video-grid.focus-mode .stream-container.focused {
+            width: 100%;
+            order: -1;
+            cursor: default;
+        }
+        .video-grid.focus-mode .stream-container:not(.focused) {
+            width: calc(25% - 15px);
+            min-width: 250px;
+            order: 1;
+        }
+        .video-grid.focus-mode .stream-container:not(.focused):hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        @media (max-width: 1200px) {
+            .video-grid.focus-mode .stream-container:not(.focused) {
+                width: calc(33.333% - 14px);
+            }
+        }
+        @media (max-width: 768px) {
+            .video-grid.focus-mode .stream-container:not(.focused) {
+                width: calc(50% - 10px);
+                min-width: 150px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center mb-2 mt-4 text-primary">📺 MultiView</h1>
-        <p class="text-center text-muted mb-4">Watch multiple streams from YouTube, Kick, and Twitch simultaneously</p>
-
-        <div class="card">
-            <div class="card-body p-4">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label for="platformSelect" class="form-label fw-bold">Platform</label>
-                        <select class="form-select" id="platformSelect">
-                            <option value="youtube">YouTube</option>
-                            <option value="kick">Kick</option>
-                            <option value="twitch">Twitch</option>
-                        </select>
-                    </div>
-                    <div class="col-md-8">
-                        <label for="streamInput" class="form-label fw-bold">
-                            <span id="inputLabel">YouTube Video Link</span>
-                        </label>
-                        <div class="d-flex gap-2">
-                            <input type="text" class="form-control" id="streamInput" placeholder="Paste YouTube URL here">
-                            <button type="button" id="addStreamBtn" class="btn btn-primary btn-custom">
-                                ➕ Add Stream
-                            </button>
-                        </div>
-                        <small class="form-text text-muted" id="inputHelp">Enter the full YouTube video URL</small>
-                    </div>
-                </div>
-            </div>
+        <div class="text-center mb-2 mt-4">
+            <a href="index.html" class="btn btn-sm btn-outline-light">🎬 Double Play</a>
         </div>
-
-        <div id="videoGrid" class="video-grid"></div>
+        <h1 class="text-center mb-2 text-primary">📺 MultiView</h1>
+        <p class="text-center text-muted mb-4">Watch multiple streams from YouTube, Kick, and Twitch simultaneously</p>
 
         <div id="emptyState" class="empty-state">
             <div class="empty-state-icon">📺</div>
             <h4>No Streams Added Yet</h4>
-            <p class="text-muted">Add your first stream using the form above</p>
+            <p class="text-muted mb-3">Click below to add your first stream</p>
+            <button type="button" class="btn btn-primary btn-lg btn-custom" data-bs-toggle="modal" data-bs-target="#addStreamModal">
+                ➕ Add Stream
+            </button>
+        </div>
+
+        <div class="text-center">
+            <button type="button" id="focusModeToggle" class="btn btn-outline-light btn-sm">
+                🎯 Focus Mode
+            </button>
+        </div>
+
+        <div id="videoGrid" class="video-grid"></div>
+
+        <div class="text-center">
+            <button type="button" id="addStreamFloatingBtn" class="btn btn-primary btn-lg btn-custom" data-bs-toggle="modal" data-bs-target="#addStreamModal">
+                ➕ Add Stream
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Stream Modal -->
+    <div class="modal fade" id="addStreamModal" tabindex="-1" aria-labelledby="addStreamModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStreamModalLabel">Add Stream</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="platformSelect" class="form-label fw-bold">Platform</label>
+                            <select class="form-select" id="platformSelect">
+                                <option value="youtube">YouTube</option>
+                                <option value="kick">Kick</option>
+                                <option value="twitch">Twitch</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label for="streamInput" class="form-label fw-bold">
+                                <span id="inputLabel">YouTube Video Link</span>
+                            </label>
+                            <input type="text" class="form-control" id="streamInput" placeholder="Paste YouTube URL here">
+                            <small class="form-text text-muted" id="inputHelp">Enter the full YouTube video URL</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="addStreamBtn" class="btn btn-primary">
+                        ➕ Add Stream
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -239,6 +350,8 @@
     <script>
         let streams = [];
         let streamIdCounter = 0;
+        let focusMode = false;
+        let focusedStreamId = null;
 
         const platformSelect = document.getElementById('platformSelect');
         const streamInput = document.getElementById('streamInput');
@@ -247,14 +360,21 @@
         const addStreamBtn = document.getElementById('addStreamBtn');
         const videoGrid = document.getElementById('videoGrid');
         const emptyState = document.getElementById('emptyState');
+        const focusModeToggle = document.getElementById('focusModeToggle');
+        const PLATFORM_KEY = 'multiviewLastPlatform';
 
         // Update input placeholder and label based on selected platform
         platformSelect.addEventListener('change', function() {
             const platform = this.value;
             updateInputPlaceholder(platform);
+            // Save to localStorage
+            localStorage.setItem(PLATFORM_KEY, platform);
         });
 
         function updateInputPlaceholder(platform) {
+            // Update data attribute for color coding
+            platformSelect.setAttribute('data-platform', platform);
+
             switch(platform) {
                 case 'youtube':
                     inputLabel.textContent = 'YouTube Video Link';
@@ -346,10 +466,98 @@
             }
         }
 
-        // Update empty state visibility
+        // Update empty state visibility and floating button
         function updateEmptyState() {
-            emptyState.style.display = streams.length === 0 ? 'block' : 'none';
+            const addStreamFloatingBtn = document.getElementById('addStreamFloatingBtn');
+            if (streams.length === 0) {
+                emptyState.style.display = 'block';
+                addStreamFloatingBtn.style.display = 'none';
+                focusModeToggle.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                addStreamFloatingBtn.style.display = 'block';
+                // Show focus mode toggle only if 2 or more streams
+                focusModeToggle.style.display = streams.length >= 2 ? 'block' : 'none';
+            }
         }
+
+        // Switch focus to a different stream (using CSS only)
+        function switchFocus(newFocusedStreamId) {
+            if (!focusMode || focusedStreamId === newFocusedStreamId) return;
+
+            // Remove focused class from all streams
+            const allStreamContainers = videoGrid.querySelectorAll('.stream-container');
+            allStreamContainers.forEach(container => {
+                container.classList.remove('focused');
+            });
+
+            // Add focused class to new
+            focusedStreamId = newFocusedStreamId;
+            const newFocused = videoGrid.querySelector(`[data-stream-id="${focusedStreamId}"]`);
+            if (newFocused) {
+                newFocused.classList.add('focused');
+            }
+        }
+
+        // Setup focus mode (add click handlers and set initial focus)
+        function setupFocusMode() {
+            // If no focused stream set, focus the first one
+            if (!focusedStreamId && streams.length > 0) {
+                focusedStreamId = streams[0].id;
+            }
+
+            // Add focused class to the focused stream
+            const allStreamContainers = videoGrid.querySelectorAll('.stream-container');
+            allStreamContainers.forEach(container => {
+                const streamId = parseInt(container.getAttribute('data-stream-id'));
+
+                if (streamId === focusedStreamId) {
+                    container.classList.add('focused');
+                } else {
+                    container.classList.remove('focused');
+                }
+
+                // Add click handler if not already added
+                if (!container.hasAttribute('data-focus-handler')) {
+                    container.setAttribute('data-focus-handler', 'true');
+                    container.addEventListener('click', function() {
+                        const id = parseInt(this.getAttribute('data-stream-id'));
+                        if (!this.classList.contains('focused')) {
+                            switchFocus(id);
+                        }
+                    });
+                }
+            });
+        }
+
+        // Toggle focus mode
+        function toggleFocusMode() {
+            focusMode = !focusMode;
+
+            if (focusMode) {
+                focusModeToggle.innerHTML = '📋 Grid View';
+                focusModeToggle.classList.remove('btn-outline-light');
+                focusModeToggle.classList.add('btn-light');
+                videoGrid.classList.add('focus-mode');
+                setupFocusMode();
+            } else {
+                focusModeToggle.innerHTML = '🎯 Focus Mode';
+                focusModeToggle.classList.remove('btn-light');
+                focusModeToggle.classList.add('btn-outline-light');
+                videoGrid.classList.remove('focus-mode');
+
+                // Remove focused class from all elements
+                const allStreamContainers = videoGrid.querySelectorAll('.stream-container');
+                allStreamContainers.forEach(container => {
+                    container.classList.remove('focused');
+                });
+
+                updateGridClass();
+            }
+        }
+
+        // Focus mode toggle click handler
+        focusModeToggle.addEventListener('click', toggleFocusMode);
 
         // Add stream
         addStreamBtn.addEventListener('click', function() {
@@ -379,17 +587,34 @@
 
             streams.push(stream);
 
-            // Create and append only the new stream element
+            // Create and append the new stream element
             const streamElement = createStreamElement(stream);
             videoGrid.appendChild(streamElement);
 
-            // Update grid layout and empty state
-            updateGridClass();
+            // If in focus mode, add click handler to new stream
+            if (focusMode) {
+                streamElement.setAttribute('data-focus-handler', 'true');
+                streamElement.addEventListener('click', function() {
+                    const streamId = parseInt(this.getAttribute('data-stream-id'));
+                    if (!this.classList.contains('focused')) {
+                        switchFocus(streamId);
+                    }
+                });
+            } else {
+                updateGridClass();
+            }
+
+            // Update empty state
             updateEmptyState();
 
             // Clear input
             streamInput.value = '';
-            streamInput.focus();
+
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addStreamModal'));
+            if (modal) {
+                modal.hide();
+            }
         });
 
         // Allow Enter key to add stream
@@ -404,14 +629,41 @@
             // Remove from streams array
             streams = streams.filter(s => s.id !== streamId);
 
-            // Remove only the specific DOM element
+            // Remove the specific DOM element
             const streamElement = videoGrid.querySelector(`[data-stream-id="${streamId}"]`);
             if (streamElement) {
                 streamElement.remove();
             }
 
-            // Update grid layout and empty state
-            updateGridClass();
+            // If removing the focused stream in focus mode, pick a new focus
+            if (focusMode && focusedStreamId === streamId && streams.length > 0) {
+                focusedStreamId = streams[0].id;
+                const newFocused = videoGrid.querySelector(`[data-stream-id="${focusedStreamId}"]`);
+                if (newFocused) {
+                    newFocused.classList.add('focused');
+                }
+            }
+
+            // If we drop below 2 streams in focus mode, exit focus mode
+            if (focusMode && streams.length < 2) {
+                focusMode = false;
+                videoGrid.classList.remove('focus-mode');
+                focusModeToggle.innerHTML = '🎯 Focus Mode';
+                focusModeToggle.classList.remove('btn-light');
+                focusModeToggle.classList.add('btn-outline-light');
+
+                // Remove focused class from remaining element
+                const focusedElement = videoGrid.querySelector('.stream-container.focused');
+                if (focusedElement) {
+                    focusedElement.classList.remove('focused');
+                }
+            }
+
+            if (!focusMode) {
+                updateGridClass();
+            }
+
+            // Update empty state
             updateEmptyState();
         }
 
@@ -426,8 +678,29 @@
         // Make removeStream available globally
         window.removeStream = removeStream;
 
-        // Initialize
-        updateInputPlaceholder('youtube');
+        // Get saved platform or default to youtube
+        function getSavedPlatform() {
+            return localStorage.getItem(PLATFORM_KEY) || 'youtube';
+        }
+
+        // Clear modal form when it's shown
+        const addStreamModal = document.getElementById('addStreamModal');
+        addStreamModal.addEventListener('show.bs.modal', function () {
+            streamInput.value = '';
+            const savedPlatform = getSavedPlatform();
+            platformSelect.value = savedPlatform;
+            updateInputPlaceholder(savedPlatform);
+        });
+
+        // Focus on input when modal is shown
+        addStreamModal.addEventListener('shown.bs.modal', function () {
+            streamInput.focus();
+        });
+
+        // Initialize with saved platform
+        const initialPlatform = getSavedPlatform();
+        platformSelect.value = initialPlatform;
+        updateInputPlaceholder(initialPlatform);
     </script>
 </body>
 </html>
