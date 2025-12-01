@@ -244,12 +244,12 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.3s ease, order 0.3s ease;
         }
         .video-grid.focus-mode .stream-container.focused {
-            width: 100%;
+            width: 100% !important;
             order: -1;
             cursor: default;
         }
         .video-grid.focus-mode .stream-container:not(.focused) {
-            width: calc(25% - 15px);
+            width: calc(25% - 15px) !important;
             min-width: 250px;
             order: 1;
         }
@@ -650,17 +650,28 @@
                         <span class="platform-badge ${stream.platform}">${stream.platform}</span>
                         <span>${escapeHtml(stream.displayName)}</span>
                     </div>
-                    <button class="remove-btn" onclick="removeStream(${stream.id})" title="Remove stream">×</button>
+                    <button class="remove-btn" title="Remove stream">×</button>
                 </div>
                 <div class="stream-iframe-container">
                     <iframe src="${stream.iframeURL}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
                 </div>
             `;
+
+            // Add remove button click handler with stopPropagation
+            const removeBtn = streamContainer.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent bubbling to container click handler
+                removeStream(stream.id);
+            });
+
             return streamContainer;
         }
 
         // Update grid class based on number of streams
         function updateGridClass() {
+            // Don't update grid classes if we're in focus mode
+            if (focusMode) return;
+
             videoGrid.classList.remove('grid-1', 'grid-2', 'grid-3', 'grid-4', 'grid-5', 'grid-6');
             if (streams.length > 0) {
                 const gridClass = `grid-${Math.min(streams.length, 6)}`;
@@ -740,6 +751,9 @@
                 focusModeToggle.innerHTML = '📋 Grid View';
                 focusModeToggle.classList.remove('btn-outline-light');
                 focusModeToggle.classList.add('btn-light');
+
+                // Remove all grid classes before adding focus-mode
+                videoGrid.classList.remove('grid-1', 'grid-2', 'grid-3', 'grid-4', 'grid-5', 'grid-6');
                 videoGrid.classList.add('focus-mode');
                 setupFocusMode();
             } else {
@@ -831,6 +845,9 @@
 
         // Remove stream
         function removeStream(streamId) {
+            const wasInFocusMode = focusMode;
+            const currentFocusedId = focusedStreamId;
+
             // Remove from streams array
             streams = streams.filter(s => s.id !== streamId);
 
@@ -843,10 +860,6 @@
             // If removing the focused stream in focus mode, pick a new focus
             if (focusMode && focusedStreamId === streamId && streams.length > 0) {
                 focusedStreamId = streams[0].id;
-                const newFocused = videoGrid.querySelector(`[data-stream-id="${focusedStreamId}"]`);
-                if (newFocused) {
-                    newFocused.classList.add('focused');
-                }
             }
 
             // If we drop below 2 streams in focus mode, exit focus mode
@@ -862,9 +875,23 @@
                 if (focusedElement) {
                     focusedElement.classList.remove('focused');
                 }
-            }
+                updateGridClass();
+            } else if (wasInFocusMode && streams.length >= 2) {
+                // Still in focus mode - ensure everything is set up correctly
+                // Remove all grid classes and ensure focus-mode class is present
+                videoGrid.classList.remove('grid-1', 'grid-2', 'grid-3', 'grid-4', 'grid-5', 'grid-6');
+                videoGrid.classList.add('focus-mode');
 
-            if (!focusMode) {
+                // Ensure focused class is on the right element
+                videoGrid.querySelectorAll('.stream-container').forEach(container => {
+                    const streamId = parseInt(container.getAttribute('data-stream-id'));
+                    if (streamId === focusedStreamId) {
+                        container.classList.add('focused');
+                    } else {
+                        container.classList.remove('focused');
+                    }
+                });
+            } else if (!focusMode) {
                 updateGridClass();
             }
 
@@ -879,9 +906,6 @@
             div.textContent = text;
             return div.innerHTML;
         }
-
-        // Make removeStream available globally
-        window.removeStream = removeStream;
 
         // Get saved platform or default to youtube
         function getSavedPlatform() {
