@@ -15,6 +15,8 @@
         }
         .container {
             max-width: 1600px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .card {
             border-radius: 15px;
@@ -59,7 +61,8 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 20px;
-            margin-top: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
         }
         /* 1 stream: full width */
         .video-grid.grid-1 .stream-container {
@@ -99,7 +102,7 @@
         }
         .stream-header {
             background-color: #353548;
-            padding: 10px 15px;
+            padding: 4px 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -180,6 +183,8 @@
             text-align: center;
             padding: 60px 20px;
             color: #9999aa;
+            max-width: 1600px;
+            margin: 0 auto;
         }
         .empty-state-icon {
             font-size: 64px;
@@ -222,14 +227,9 @@
             color: #000 !important;
             border-color: #53fc18;
         }
-        #addStreamFloatingBtn {
-            display: none;
-            margin: 30px auto;
-            padding: 15px 40px;
-        }
-        #focusModeToggle {
-            display: none;
-            margin: 20px auto 10px;
+        #focusModeToggle:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         /* Focus Mode Layout - using order instead of moving DOM */
         .video-grid.focus-mode {
@@ -238,6 +238,7 @@
             flex-wrap: wrap;
             gap: 20px;
             align-items: flex-start;
+            justify-content: center;
         }
         .video-grid.focus-mode .stream-container {
             cursor: pointer;
@@ -249,9 +250,13 @@
             cursor: default;
         }
         .video-grid.focus-mode .stream-container:not(.focused) {
-            width: calc(25% - 15px) !important;
-            min-width: 250px;
+            flex: 1 1 0;
+            min-width: 200px;
+            max-width: 400px;
             order: 1;
+        }
+        .bg-surface-lowest {
+            overflow: hidden !important;
         }
         .video-grid.focus-mode .stream-container:not(.focused):hover {
             transform: scale(1.05);
@@ -290,7 +295,24 @@
             border-bottom: 2px solid #3d3d54;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 8px;
+        }
+        .clear-recent-btn {
+            background: none;
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .clear-recent-btn:hover {
+            background-color: #ff6b6b;
+            color: white;
         }
         .recently-watched-item {
             background-color: #2b2b3d;
@@ -302,6 +324,24 @@
             transition: all 0.2s ease;
         }
         .recently-watched-item:hover {
+            background-color: #353548;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+        .add-stream-sidebar-btn {
+            background-color: #2b2b3d;
+            border: 1px solid #3d3d54;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .add-stream-sidebar-btn:hover {
             background-color: #353548;
             border-color: #667eea;
             transform: translateX(5px);
@@ -336,13 +376,75 @@
                 margin-left: 0;
             }
         }
+        /* Header Bar */
+        .header-bar {
+            position: fixed;
+            top: 0;
+            left: 280px;
+            right: 0;
+            height: 60px;
+            background-color: #1a1a2e;
+            border-bottom: 1px solid #3d3d54;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 999;
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin: 0;
+        }
+        .header-link {
+            color: #e4e4e4;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid #4a4a5e;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        .header-link:hover {
+            background-color: #2b2b3d;
+            border-color: #667eea;
+            color: #667eea;
+        }
+        .main-content-with-sidebar {
+            padding-top: 60px;
+            padding-left: 280px;
+            padding-right: 0;
+        }
+        .main-content-with-sidebar .container,
+        .container.main-content-with-sidebar {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        @media (max-width: 992px) {
+            .header-bar {
+                left: 0;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Header Bar -->
+    <div class="header-bar">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h1 class="header-title">📺 MultiView</h1>
+            <button type="button" id="focusModeToggle" class="btn btn-outline-light btn-sm">
+                🎯 Focus Mode
+            </button>
+        </div>
+        <a href="index.html" class="header-link">🎬 Double Play</a>
+    </div>
+
     <!-- Recently Watched Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
-            📜 Recently Watched
+            <span>📜 Recently Watched</span>
+            <button id="clearRecentBtn" class="clear-recent-btn" title="Clear all recently watched">Clear</button>
         </div>
         <div id="recentlyWatchedList">
             <div class="sidebar-empty">No streams yet</div>
@@ -350,12 +452,6 @@
     </div>
 
     <div class="container main-content-with-sidebar">
-        <div class="text-center mb-2 mt-4">
-            <a href="index.html" class="btn btn-sm btn-outline-light">🎬 Double Play</a>
-        </div>
-        <h1 class="text-center mb-2 text-primary">📺 MultiView</h1>
-        <p class="text-center text-muted mb-4">Watch multiple streams from YouTube, Kick, and Twitch simultaneously</p>
-
         <div id="emptyState" class="empty-state">
             <div class="empty-state-icon">📺</div>
             <h4>No Streams Added Yet</h4>
@@ -365,19 +461,7 @@
             </button>
         </div>
 
-        <div class="text-center">
-            <button type="button" id="focusModeToggle" class="btn btn-outline-light btn-sm">
-                🎯 Focus Mode
-            </button>
-        </div>
-
         <div id="videoGrid" class="video-grid"></div>
-
-        <div class="text-center">
-            <button type="button" id="addStreamFloatingBtn" class="btn btn-primary btn-lg btn-custom" data-bs-toggle="modal" data-bs-target="#addStreamModal">
-                ➕ Add Stream
-            </button>
-        </div>
     </div>
 
     <!-- Add Stream Modal -->
@@ -417,8 +501,8 @@
         </div>
     </div>
 
-    <footer class="text-center mt-5 pb-4">
-        <div class="text-muted small" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+    <footer style="position: fixed; bottom: 20px; right: 20px; z-index: 100;">
+        <div class="text-muted small" style="display: flex; align-items: center; gap: 8px; opacity: 0.4;">
             <span style="font-size: 1.2rem;">✉️</span>
             <a href="mailto:uboa97@gmail.com" class="text-decoration-none" style="color: #667eea; font-weight: 600;">uboa97@gmail.com</a>
         </div>
@@ -440,6 +524,7 @@
         const emptyState = document.getElementById('emptyState');
         const focusModeToggle = document.getElementById('focusModeToggle');
         const recentlyWatchedList = document.getElementById('recentlyWatchedList');
+        const clearRecentBtn = document.getElementById('clearRecentBtn');
         const PLATFORM_KEY = 'multiviewLastPlatform';
         const RECENTLY_WATCHED_KEY = 'multiviewRecentlyWatched';
         const MAX_RECENTLY_WATCHED = 50;
@@ -526,12 +611,26 @@
         function renderRecentlyWatched() {
             const recentlyWatched = getRecentlyWatched();
 
+            // Always clear and add the "Add Stream" button first
+            recentlyWatchedList.innerHTML = '';
+
+            const addStreamBtn = document.createElement('div');
+            addStreamBtn.className = 'add-stream-sidebar-btn';
+            addStreamBtn.innerHTML = '➕ Add Stream';
+            addStreamBtn.setAttribute('data-bs-toggle', 'modal');
+            addStreamBtn.setAttribute('data-bs-target', '#addStreamModal');
+            recentlyWatchedList.appendChild(addStreamBtn);
+
             if (recentlyWatched.length === 0) {
-                recentlyWatchedList.innerHTML = '<div class="sidebar-empty">No streams yet</div>';
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'sidebar-empty';
+                emptyDiv.textContent = 'No streams yet';
+                recentlyWatchedList.appendChild(emptyDiv);
+                clearRecentBtn.style.display = 'none';
                 return;
             }
 
-            recentlyWatchedList.innerHTML = '';
+            clearRecentBtn.style.display = 'block';
             recentlyWatched.forEach(item => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'recently-watched-item';
@@ -553,6 +652,14 @@
             });
         }
 
+        function clearRecentlyWatched() {
+            if (!confirm('Clear all recently watched streams?')) {
+                return;
+            }
+            localStorage.removeItem(RECENTLY_WATCHED_KEY);
+            renderRecentlyWatched();
+        }
+
         function addStreamFromRecent(item) {
             // Regenerate the iframe URL with current parameters (ensures mute is applied)
             const iframeURL = generateIframeURL(item.platform, item.input);
@@ -564,7 +671,7 @@
             // Check if this stream is already being watched
             const alreadyWatching = streams.some(s => s.iframeURL === iframeURL);
             if (alreadyWatching) {
-                alert('This stream is already being watched!');
+                // Silently do nothing if already watching
                 return;
             }
 
@@ -632,12 +739,28 @@
             }
         }
 
+        // Fetch YouTube video title using oEmbed API
+        async function fetchYouTubeTitle(videoID) {
+            try {
+                const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoID}&format=json`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.title;
+                }
+            } catch (e) {
+                console.error('Error fetching YouTube title:', e);
+            }
+            return videoID; // Fallback to video ID
+        }
+
         // Get display name for stream
-        function getStreamDisplayName(platform, input) {
+        async function getStreamDisplayName(platform, input) {
             switch(platform) {
                 case 'youtube':
                     const videoID = getYouTubeID(input);
-                    return videoID || input;
+                    if (!videoID) return input;
+                    // Fetch the actual title for YouTube videos
+                    return await fetchYouTubeTitle(videoID);
                 case 'kick':
                 case 'twitch':
                     return input.replace('@', '').trim();
@@ -660,7 +783,7 @@
                     <button class="remove-btn" title="Remove stream">×</button>
                 </div>
                 <div class="stream-iframe-container">
-                    <iframe src="${stream.iframeURL}" allowfullscreen allow="autoplay; encrypted-media" muted></iframe>
+                    <iframe src="${stream.iframeURL}" allowfullscreen allow="autoplay; encrypted-media" muted scrolling="no" style="overflow: hidden;"></iframe>
                 </div>
             `;
 
@@ -686,19 +809,16 @@
             }
         }
 
-        // Update empty state visibility and floating button
+        // Update empty state visibility and focus mode toggle
         function updateEmptyState() {
-            const addStreamFloatingBtn = document.getElementById('addStreamFloatingBtn');
             if (streams.length === 0) {
                 emptyState.style.display = 'block';
-                addStreamFloatingBtn.style.display = 'none';
-                focusModeToggle.style.display = 'none';
             } else {
                 emptyState.style.display = 'none';
-                addStreamFloatingBtn.style.display = 'block';
-                // Show focus mode toggle only if 2 or more streams
-                focusModeToggle.style.display = streams.length >= 2 ? 'block' : 'none';
             }
+
+            // Disable focus mode toggle if fewer than 2 streams
+            focusModeToggle.disabled = streams.length < 2;
         }
 
         // Switch focus to a different stream (using CSS only)
@@ -783,7 +903,7 @@
         focusModeToggle.addEventListener('click', toggleFocusMode);
 
         // Add stream
-        addStreamBtn.addEventListener('click', function() {
+        addStreamBtn.addEventListener('click', async function() {
             const platform = platformSelect.value;
             const input = streamInput.value.trim();
 
@@ -798,7 +918,7 @@
                 return;
             }
 
-            const displayName = getStreamDisplayName(platform, input);
+            const displayName = await getStreamDisplayName(platform, input);
             const streamId = streamIdCounter++;
 
             const stream = {
@@ -938,8 +1058,14 @@
         platformSelect.value = initialPlatform;
         updateInputPlaceholder(initialPlatform);
 
+        // Clear recently watched button
+        clearRecentBtn.addEventListener('click', clearRecentlyWatched);
+
         // Initialize recently watched list
         renderRecentlyWatched();
+
+        // Initialize focus mode toggle as disabled (no streams on page load)
+        focusModeToggle.disabled = true;
     </script>
 </body>
 </html>
