@@ -463,11 +463,15 @@
             flex: 1;
             background-color: #000;
             position: relative;
+            visibility: visible;
+            display: block;
         }
         .chat-container iframe {
             width: 100%;
             height: 100%;
             border: none;
+            visibility: visible;
+            display: block;
         }
         .chat-empty {
             display: flex;
@@ -802,6 +806,8 @@
 
         // Generate iframe URL based on platform
         function generateIframeURL(platform, input) {
+            const parentDomain = window.location.hostname || 'localhost';
+
             switch(platform) {
                 case 'youtube':
                     const videoID = getYouTubeID(input);
@@ -816,7 +822,7 @@
                     // Remove any @ symbol and whitespace
                     const twitchUsername = input.replace('@', '').trim();
                     if (!twitchUsername) return null;
-                    return `https://player.twitch.tv/?channel=${twitchUsername}&parent=localhost&muted=true`;
+                    return `https://player.twitch.tv/?channel=${twitchUsername}&parent=${parentDomain}&muted=true`;
                 default:
                     return null;
             }
@@ -1126,11 +1132,13 @@
 
         // Generate chat URL based on platform
         function generateChatURL(platform, input) {
+            const domain = window.location.hostname || 'localhost';
+
             switch(platform) {
                 case 'youtube':
                     const videoID = getYouTubeID(input);
                     if (!videoID) return null;
-                    return `https://www.youtube.com/live_chat?is_popout=1&v=${videoID}`;
+                    return `https://www.youtube.com/live_chat?v=${videoID}&embed_domain=${domain}`;
                 case 'kick':
                     const kickUsername = input.replace('@', '').trim();
                     if (!kickUsername) return null;
@@ -1138,7 +1146,7 @@
                 case 'twitch':
                     const twitchUsername = input.replace('@', '').trim();
                     if (!twitchUsername) return null;
-                    return `https://www.twitch.tv/popout/${twitchUsername}/chat?popout=`;
+                    return `https://www.twitch.tv/embed/${twitchUsername}/chat?parent=${domain}`;
                 default:
                     return null;
             }
@@ -1215,7 +1223,7 @@
             }
 
             console.log('Creating iframe with URL:', chatURL);
-            chatContainer.innerHTML = `<iframe src="${chatURL}"></iframe>`;
+            chatContainer.innerHTML = `<iframe src="${chatURL}" allowfullscreen frameborder="0" scrolling="no"></iframe>`;
         }
 
         // Chat selector change handler
