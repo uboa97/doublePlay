@@ -414,12 +414,76 @@
         .main-content-with-sidebar {
             padding-top: 60px;
             padding-left: 280px;
-            padding-right: 0;
+            padding-right: 380px;
         }
         .main-content-with-sidebar .container,
         .container.main-content-with-sidebar {
             margin-left: auto;
             margin-right: auto;
+        }
+        /* Chat Sidebar */
+        .chat-sidebar {
+            position: fixed;
+            right: 0;
+            top: 60px;
+            width: 380px;
+            height: calc(100vh - 60px);
+            background-color: #1a1a2e;
+            border-left: 1px solid #3d3d54;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .chat-header {
+            padding: 15px;
+            background-color: #2b2b3d;
+            border-bottom: 1px solid #3d3d54;
+        }
+        .chat-header label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .chat-selector {
+            width: 100%;
+            background-color: #353548;
+            border: 1px solid #4a4a5e;
+            color: #e4e4e4;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .chat-selector:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .chat-container {
+            flex: 1;
+            background-color: #000;
+            position: relative;
+        }
+        .chat-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .chat-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #9999aa;
+            font-size: 14px;
+        }
+        @media (max-width: 1400px) {
+            .chat-sidebar {
+                display: none;
+            }
+            .main-content-with-sidebar {
+                padding-right: 0;
+            }
         }
         @media (max-width: 992px) {
             .header-bar {
@@ -448,6 +512,19 @@
         </div>
         <div id="recentlyWatchedList">
             <div class="sidebar-empty">No streams yet</div>
+        </div>
+    </div>
+
+    <!-- Chat Sidebar -->
+    <div class="chat-sidebar">
+        <div class="chat-header">
+            <label for="chatSelector">💬 Stream Chat</label>
+            <select id="chatSelector" class="chat-selector">
+                <option value="">No streams available</option>
+            </select>
+        </div>
+        <div id="chatContainer" class="chat-container">
+            <div class="chat-empty">Select a stream to view chat</div>
         </div>
     </div>
 
@@ -525,6 +602,8 @@
         const focusModeToggle = document.getElementById('focusModeToggle');
         const recentlyWatchedList = document.getElementById('recentlyWatchedList');
         const clearRecentBtn = document.getElementById('clearRecentBtn');
+        const chatSelector = document.getElementById('chatSelector');
+        const chatContainer = document.getElementById('chatContainer');
         const PLATFORM_KEY = 'multiviewLastPlatform';
         const RECENTLY_WATCHED_KEY = 'multiviewRecentlyWatched';
         const MAX_RECENTLY_WATCHED = 50;
@@ -681,7 +760,8 @@
                 id: streamId,
                 platform: item.platform,
                 displayName: item.displayName,
-                iframeURL: iframeURL
+                iframeURL: iframeURL,
+                input: item.input
             };
 
             streams.push(stream);
@@ -705,6 +785,9 @@
 
             // Update empty state
             updateEmptyState();
+
+            // Update chat selector
+            updateChatSelector();
 
             // Move this item to the top of recently watched (with updated URL)
             saveToRecentlyWatched(item.platform, item.input, item.displayName, iframeURL);
@@ -925,7 +1008,8 @@
                 id: streamId,
                 platform: platform,
                 displayName: displayName,
-                iframeURL: iframeURL
+                iframeURL: iframeURL,
+                input: input
             };
 
             streams.push(stream);
@@ -949,6 +1033,9 @@
 
             // Update empty state
             updateEmptyState();
+
+            // Update chat selector
+            updateChatSelector();
 
             // Save to recently watched
             saveToRecentlyWatched(platform, input, displayName, iframeURL);
@@ -1024,6 +1111,9 @@
 
             // Update empty state
             updateEmptyState();
+
+            // Update chat selector
+            updateChatSelector();
         }
 
 
@@ -1033,6 +1123,105 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Generate chat URL based on platform
+        function generateChatURL(platform, input) {
+            switch(platform) {
+                case 'youtube':
+                    const videoID = getYouTubeID(input);
+                    if (!videoID) return null;
+                    return `https://www.youtube.com/live_chat?is_popout=1&v=${videoID}`;
+                case 'kick':
+                    const kickUsername = input.replace('@', '').trim();
+                    if (!kickUsername) return null;
+                    return `https://kick.com/popout/${kickUsername}/chat`;
+                case 'twitch':
+                    const twitchUsername = input.replace('@', '').trim();
+                    if (!twitchUsername) return null;
+                    return `https://www.twitch.tv/popout/${twitchUsername}/chat?popout=`;
+                default:
+                    return null;
+            }
+        }
+
+        // Update chat selector dropdown
+        function updateChatSelector() {
+            const previousSelection = chatSelector.value;
+            const hadIframe = chatContainer.querySelector('iframe') !== null;
+            chatSelector.innerHTML = '';
+
+            if (streams.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No streams available';
+                chatSelector.appendChild(option);
+                chatContainer.innerHTML = '<div class="chat-empty">Select a stream to view chat</div>';
+                return;
+            }
+
+            streams.forEach(stream => {
+                const option = document.createElement('option');
+                option.value = stream.id;
+                option.textContent = `[${stream.platform.toUpperCase()}] ${stream.displayName}`;
+                chatSelector.appendChild(option);
+            });
+
+            // If this is the first stream, always load its chat
+            if (streams.length === 1) {
+                chatSelector.value = streams[0].id;
+                loadChat(streams[0].id);
+                return;
+            }
+
+            // Check if previous selection still exists
+            const previousStreamStillExists = previousSelection && streams.some(s => s.id === parseInt(previousSelection));
+
+            if (previousStreamStillExists && hadIframe) {
+                // Keep the existing chat loaded
+                chatSelector.value = previousSelection;
+            } else {
+                // Load chat for first stream (previous was removed)
+                chatSelector.value = streams[0].id;
+                loadChat(streams[0].id);
+            }
+        }
+
+        // Load chat iframe for selected stream
+        function loadChat(streamId) {
+            console.log('loadChat called with streamId:', streamId);
+
+            if (streamId === '' || streamId === null || streamId === undefined) {
+                console.log('No streamId provided');
+                chatContainer.innerHTML = '<div class="chat-empty">Select a stream to view chat</div>';
+                return;
+            }
+
+            const stream = streams.find(s => s.id === parseInt(streamId));
+            console.log('Found stream:', stream);
+
+            if (!stream) {
+                console.log('Stream not found in streams array');
+                chatContainer.innerHTML = '<div class="chat-empty">Stream not found</div>';
+                return;
+            }
+
+            const chatURL = generateChatURL(stream.platform, stream.input);
+            console.log('Generated chat URL:', chatURL);
+
+            if (!chatURL) {
+                console.log('Chat URL generation failed');
+                chatContainer.innerHTML = '<div class="chat-empty">Chat not available for this stream</div>';
+                return;
+            }
+
+            console.log('Creating iframe with URL:', chatURL);
+            chatContainer.innerHTML = `<iframe src="${chatURL}"></iframe>`;
+        }
+
+        // Chat selector change handler
+        chatSelector.addEventListener('change', function() {
+            loadChat(this.value);
+        });
 
         // Get saved platform or default to youtube
         function getSavedPlatform() {
