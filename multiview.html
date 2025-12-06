@@ -1246,6 +1246,8 @@
         function updateChatSelector() {
             const previousSelection = chatSelector.value;
             const hadIframe = chatContainer.querySelector('iframe') !== null;
+            const hadKickChat = chatContainer.querySelector('#kick-chat-feed') !== null;
+            const hadActiveChat = hadIframe || hadKickChat;
             chatSelector.innerHTML = '';
 
             if (streams.length === 0) {
@@ -1274,7 +1276,7 @@
             // Check if previous selection still exists
             const previousStreamStillExists = previousSelection && streams.some(s => s.id === parseInt(previousSelection));
 
-            if (previousStreamStillExists && hadIframe) {
+            if (previousStreamStillExists && hadActiveChat) {
                 // Keep the existing chat loaded
                 chatSelector.value = previousSelection;
             } else {
