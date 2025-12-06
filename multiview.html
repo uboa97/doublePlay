@@ -6,6 +6,7 @@
     <title>MultiView - Watch Multiple Streams</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="kick-chat.css" rel="stylesheet">
     <style>
         body {
             background: #0a0a0a;
@@ -524,7 +525,8 @@
             background-color: #0a0a0a;
             position: relative;
             visibility: visible;
-            display: block;
+            display: flex;
+            overflow: hidden;
         }
         .chat-container iframe {
             width: 100%;
@@ -650,11 +652,14 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+    <script src="kick-chat.js"></script>
     <script>
         let streams = [];
         let streamIdCounter = 0;
         let focusMode = false;
         let focusedStreamId = null;
+        let kickChatInstance = null;
 
         const platformSelect = document.getElementById('platformSelect');
         const streamInput = document.getElementById('streamInput');
@@ -1286,6 +1291,10 @@
             if (streamId === '' || streamId === null || streamId === undefined) {
                 console.log('No streamId provided');
                 chatContainer.innerHTML = '<div class="chat-empty">Select a stream to view chat</div>';
+                // Disconnect Kick chat if it was active
+                if (kickChatInstance) {
+                    kickChatInstance.disconnect();
+                }
                 return;
             }
 
@@ -1295,9 +1304,43 @@
             if (!stream) {
                 console.log('Stream not found in streams array');
                 chatContainer.innerHTML = '<div class="chat-empty">Stream not found</div>';
+                // Disconnect Kick chat if it was active
+                if (kickChatInstance) {
+                    kickChatInstance.disconnect();
+                }
                 return;
             }
 
+            // For Kick streams, use custom chat feed
+            if (stream.platform === 'kick') {
+                console.log('Loading Kick chat for:', stream.input);
+
+                // Create chat feed container if it doesn't exist
+                let kickChatFeed = chatContainer.querySelector('#kick-chat-feed');
+                if (!kickChatFeed) {
+                    chatContainer.innerHTML = '<div id="kick-chat-feed"></div>';
+                    kickChatFeed = chatContainer.querySelector('#kick-chat-feed');
+                }
+
+                // Initialize KickChat instance if needed
+                if (!kickChatInstance) {
+                    kickChatInstance = new KickChat(kickChatFeed);
+                } else {
+                    // Update container reference and reinitialize scroll listener
+                    kickChatInstance.updateContainer(kickChatFeed);
+                }
+
+                // Connect to the Kick channel
+                kickChatInstance.connect(stream.input);
+                return;
+            }
+
+            // Disconnect Kick chat if switching away from Kick
+            if (kickChatInstance) {
+                kickChatInstance.disconnect();
+            }
+
+            // For YouTube and Twitch, use iframe
             const chatURL = generateChatURL(stream.platform, stream.input);
             console.log('Generated chat URL:', chatURL);
 
