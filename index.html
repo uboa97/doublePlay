@@ -191,6 +191,82 @@
             border-color: #667eea;
             color: #ffffff;
         }
+        /* Fit Mode Styles */
+        body.fit-mode {
+            padding: 10px;
+            overflow: hidden;
+        }
+        body.fit-mode .container {
+            max-width: 100% !important;
+            padding: 0;
+        }
+        body.fit-mode #playerContainer {
+            padding: 10px;
+            border: none;
+            box-shadow: none;
+        }
+        body.fit-mode .card,
+        body.fit-mode .multiview-link,
+        body.fit-mode h1.text-center,
+        body.fit-mode p.text-center.text-muted,
+        body.fit-mode footer,
+        body.fit-mode #changeVideoBtn,
+        body.fit-mode #changeVideoForm,
+        body.fit-mode #shareBtn,
+        body.fit-mode .size-controls,
+        body.fit-mode .video-header-row {
+            display: none !important;
+        }
+        body.fit-mode .fit-mode-header {
+            display: flex !important;
+        }
+        body.fit-mode .video-container {
+            padding-bottom: 0;
+            /* Account for: header(50px) + gap(16px) + audio player(350px) + play button(80px) + padding(20px) */
+            height: calc(100vh - 520px);
+            max-height: calc((100vw - 20px) * 0.5625);
+            aspect-ratio: 16/9;
+            margin: 0 auto;
+        }
+        body.fit-mode .video-container iframe {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        @media (max-height: 900px) {
+            body.fit-mode .video-container {
+                height: calc(100vh - 480px);
+            }
+        }
+        .fit-mode-header {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .fit-exit-btn {
+            background: rgba(255, 107, 107, 0.9);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .fit-exit-btn:hover {
+            background: #ff6b6b;
+            transform: scale(1.1);
+        }
+        .fit-mode-title {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 16px;
+        }
     </style>
 </head>
 <!-- Intro Modal -->
@@ -223,20 +299,27 @@
 </script>
 <body>
     <div class="container">
-        <div class="text-center mb-2">
+        <div class="text-center mb-2 multiview-link">
             <a href="multiview.html" class="btn btn-sm btn-outline-light">📺 MultiView</a>
         </div>
         <h1 class="text-center mb-4 mt-2 text-primary">🎬 Double Play</h1>
         <p class="text-center text-muted mb-4">Play video from one YouTube link while listening to audio from another simultaneously</p>
 
         <div id="playerContainer" class="control-buttons">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="fit-mode-header">
+                        <span class="fit-mode-title">🎬 Double Play - Fit Mode</span>
+                        <button type="button" id="fitExitBtn" class="fit-exit-btn" title="Exit Fit Mode">✕</button>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3 video-header-row">
                         <h6 class="text-secondary mb-0">🎬 Video (Muted)</h6>
                         <div class="d-flex gap-2 align-items-center">
-                            <span class="text-muted small me-2">Size:</span>
-                            <button type="button" id="sizeSmall" class="btn btn-sm btn-outline-light size-btn" data-size="920" title="Small (920px)">S</button>
-                            <button type="button" id="sizeMedium" class="btn btn-sm btn-outline-light size-btn" data-size="1100" title="Medium (1100px)">M</button>
-                            <button type="button" id="sizeLarge" class="btn btn-sm btn-outline-light size-btn active" data-size="1600" title="Large (1600px)">L</button>
+                            <div class="size-controls d-flex gap-2 align-items-center">
+                                <span class="text-muted small me-2">Size:</span>
+                                <button type="button" id="sizeSmall" class="btn btn-sm btn-outline-light size-btn" data-size="920" title="Small (920px)">S</button>
+                                <button type="button" id="sizeMedium" class="btn btn-sm btn-outline-light size-btn" data-size="1100" title="Medium (1100px)">M</button>
+                                <button type="button" id="sizeLarge" class="btn btn-sm btn-outline-light size-btn active" data-size="1600" title="Large (1600px)">L</button>
+                                <button type="button" id="sizeFit" class="btn btn-sm btn-outline-light size-btn" title="Fit to Screen">Fit</button>
+                            </div>
                             <button type="button" id="changeVideoBtn" class="btn btn-sm btn-outline-light ms-2">Change Video</button>
                         </div>
                     </div>
@@ -950,9 +1033,46 @@
         // Size button event listeners
         document.querySelectorAll('.size-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const size = parseInt(this.getAttribute('data-size'));
-                setContainerSize(size);
+                if (this.id === 'sizeFit') {
+                    enterFitMode();
+                } else {
+                    const size = parseInt(this.getAttribute('data-size'));
+                    setContainerSize(size);
+                }
             });
+        });
+
+        // Fit Mode functions
+        let fitMode = false;
+
+        function enterFitMode() {
+            fitMode = true;
+            document.body.classList.add('fit-mode');
+
+            // Update button states
+            document.querySelectorAll('.size-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('sizeFit').classList.add('active');
+        }
+
+        function exitFitMode() {
+            fitMode = false;
+            document.body.classList.remove('fit-mode');
+
+            // Restore previous size from localStorage or default to Large
+            const savedSize = localStorage.getItem(SIZE_KEY) || '1600';
+            setContainerSize(parseInt(savedSize));
+        }
+
+        // Exit Fit Mode button
+        document.getElementById('fitExitBtn').addEventListener('click', exitFitMode);
+
+        // Allow Escape key to exit fit mode
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && fitMode) {
+                exitFitMode();
+            }
         });
     </script>
     <script src="https://www.youtube.com/iframe_api"></script>
