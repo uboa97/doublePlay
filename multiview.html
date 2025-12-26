@@ -68,31 +68,26 @@
         /* 1 stream: full width */
         .video-grid.grid-1 .stream-container {
             width: 100%;
-            max-height: calc(100vh - 120px);
         }
         .video-grid.grid-1 .stream-iframe-container {
-            padding-bottom: 0 !important;
-            height: calc(100vh - 160px);
-            max-height: calc((100vw - 60px) * 0.5625);
+            max-height: calc(100vh - 140px);
         }
-        .video-grid.grid-1 .stream-iframe-container iframe {
-            position: static;
-            height: 100%;
-        }
-        /* 2-4 streams: 2 per row */
+        /* 2-5 streams: 2 per row */
         .video-grid.grid-2 .stream-container,
         .video-grid.grid-3 .stream-container,
-        .video-grid.grid-4 .stream-container {
+        .video-grid.grid-4 .stream-container,
+        .video-grid.grid-5 .stream-container {
             width: calc(50% - 10px);
         }
-        /* 5-6+ streams: 3 per row */
-        .video-grid.grid-5 .stream-container,
+        /* 6+ streams: 3 per row */
         .video-grid.grid-6 .stream-container {
             width: calc(33.333% - 14px);
         }
-        /* On very large screens: 4 per row for 5-6+ streams */
+        /* On very large screens: 3 per row for 5 streams, 4 per row for 6+ */
         @media (min-width: 1800px) {
-            .video-grid.grid-5 .stream-container,
+            .video-grid.grid-5 .stream-container {
+                width: calc(33.333% - 14px);
+            }
             .video-grid.grid-6 .stream-container {
                 width: calc(25% - 15px);
             }
@@ -175,18 +170,36 @@
         }
         .stream-iframe-container {
             position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
+            aspect-ratio: 16/9;
             overflow: hidden;
             background: #000;
         }
         .stream-iframe-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             border: none;
+        }
+        /* Viewport-constrained heights for grid layouts */
+        .video-grid.grid-2 .stream-iframe-container {
+            max-height: calc(100vh - 140px);
+        }
+        .video-grid.grid-3 .stream-iframe-container,
+        .video-grid.grid-4 .stream-iframe-container {
+            max-height: calc((100vh - 160px) / 2);
+        }
+        /* 5 streams: 2 columns = 3 rows */
+        .video-grid.grid-5 .stream-iframe-container {
+            max-height: calc((100vh - 180px) / 3);
+        }
+        /* 6 streams: 3 columns = 2 rows */
+        .video-grid.grid-6 .stream-iframe-container {
+            max-height: calc((100vh - 160px) / 2);
+        }
+        /* On very large screens, 5 streams uses 3 columns = 2 rows */
+        @media (min-width: 1800px) {
+            .video-grid.grid-5 .stream-iframe-container {
+                max-height: calc((100vh - 160px) / 2);
+            }
         }
         .text-primary {
             color: #667eea !important;
@@ -280,14 +293,9 @@
             overflow: hidden;
         }
         .video-grid.focus-mode .stream-container.focused .stream-iframe-container {
-            padding-bottom: 0 !important;
-            height: calc(65vh - 40px);
+            max-height: calc(65vh - 40px);
             max-width: 1800px;
             margin: 0 auto;
-        }
-        .video-grid.focus-mode .stream-container.focused .stream-iframe-container iframe {
-            position: static;
-            height: 100%;
         }
         .video-grid.focus-mode .stream-container:not(.focused) {
             flex: 1 1 0;
@@ -316,7 +324,7 @@
                 max-height: 55vh;
             }
             .video-grid.focus-mode .stream-container.focused .stream-iframe-container {
-                height: calc(55vh - 40px);
+                max-height: calc(55vh - 40px);
             }
         }
         /* Recently Watched Sidebar */
