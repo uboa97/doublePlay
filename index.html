@@ -212,6 +212,7 @@
         body.fit-mode footer,
         body.fit-mode #changeVideoBtn,
         body.fit-mode #changeVideoForm,
+        body.fit-mode #switchVideosBtn,
         body.fit-mode #shareBtn,
         body.fit-mode .size-controls,
         body.fit-mode .video-header-row {
@@ -321,6 +322,7 @@
                                 <button type="button" id="sizeFit" class="btn btn-sm btn-outline-light size-btn" title="Fit to Screen">Fit</button>
                             </div>
                             <button type="button" id="changeVideoBtn" class="btn btn-sm btn-outline-light ms-2">Change Video</button>
+                            <button type="button" id="switchVideosBtn" class="btn btn-sm btn-outline-light">Switch Videos</button>
                         </div>
                     </div>
                     <div id="changeVideoForm" class="mb-2" style="display: none;">
@@ -989,6 +991,37 @@
             if (e.key === 'Enter') {
                 document.getElementById('submitNewVideoBtn').click();
             }
+        });
+
+        // Switch Videos button - swap main video and audio video
+        document.getElementById('switchVideosBtn').addEventListener('click', function() {
+            if (!videoPlayer || !audioPlayer || !currentVideoLink || !currentAudioLink) {
+                return;
+            }
+
+            // Get current video IDs
+            const videoID = getYouTubeID(currentVideoLink);
+            const audioID = getYouTubeID(currentAudioLink);
+
+            if (!videoID || !audioID) {
+                return;
+            }
+
+            // Swap the links
+            const tempLink = currentVideoLink;
+            currentVideoLink = currentAudioLink;
+            currentAudioLink = tempLink;
+
+            // Load swapped videos into players
+            videoPlayer.loadVideoById(audioID);
+            videoPlayer.mute();
+
+            audioPlayer.loadVideoById(videoID);
+            audioPlayer.unMute();
+
+            // Update the input fields
+            document.getElementById('videoLink').value = currentVideoLink;
+            document.getElementById('audioLink').value = currentAudioLink;
         });
 
         // Share button - generate shareable link
