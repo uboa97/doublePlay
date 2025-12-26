@@ -61,16 +61,16 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
+            align-content: flex-start;
             gap: 20px;
             max-width: 2400px;
+            max-height: calc(100vh - 100px);
             margin: 0 auto;
+            overflow: hidden;
         }
         /* 1 stream: full width */
         .video-grid.grid-1 .stream-container {
             width: 100%;
-        }
-        .video-grid.grid-1 .stream-iframe-container {
-            max-height: calc(100vh - 140px);
         }
         /* 2-5 streams: 2 per row */
         .video-grid.grid-2 .stream-container,
@@ -179,26 +179,32 @@
             height: 100%;
             border: none;
         }
-        /* Viewport-constrained heights for grid layouts */
-        .video-grid.grid-2 .stream-iframe-container {
-            max-height: calc(100vh - 140px);
+        /* Viewport-constrained heights for grid layouts
+           Available height = 100vh - 100px (body padding 40px + header padding 60px)
+           Each row needs: stream-container (header ~35px + iframe) + gap(20px) */
+
+        /* 1-2 streams: 1 row */
+        .video-grid.grid-1 .stream-container,
+        .video-grid.grid-2 .stream-container {
+            max-height: calc(100vh - 120px);
         }
-        .video-grid.grid-3 .stream-iframe-container,
-        .video-grid.grid-4 .stream-iframe-container {
-            max-height: calc((100vh - 160px) / 2);
+        /* 3-4 streams: 2 rows */
+        .video-grid.grid-3 .stream-container,
+        .video-grid.grid-4 .stream-container {
+            max-height: calc((100vh - 140px) / 2);
         }
         /* 5 streams: 2 columns = 3 rows */
-        .video-grid.grid-5 .stream-iframe-container {
-            max-height: calc((100vh - 180px) / 3);
+        .video-grid.grid-5 .stream-container {
+            max-height: calc((100vh - 160px) / 3);
         }
         /* 6 streams: 3 columns = 2 rows */
-        .video-grid.grid-6 .stream-iframe-container {
-            max-height: calc((100vh - 160px) / 2);
+        .video-grid.grid-6 .stream-container {
+            max-height: calc((100vh - 140px) / 2);
         }
         /* On very large screens, 5 streams uses 3 columns = 2 rows */
         @media (min-width: 1800px) {
-            .video-grid.grid-5 .stream-iframe-container {
-                max-height: calc((100vh - 160px) / 2);
+            .video-grid.grid-5 .stream-container {
+                max-height: calc((100vh - 140px) / 2);
             }
         }
         .text-primary {
