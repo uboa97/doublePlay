@@ -142,6 +142,26 @@ class KickChat {
     }
 
     /**
+     * Generate a consistent color from a username using a simple hash
+     * @param {string} username - The username to hash
+     * @returns {string} HSL color string
+     */
+    usernameToColor(username) {
+        // Simple hash function - sum of char codes with position weighting
+        let hash = 0;
+        for (let i = 0; i < username.length; i++) {
+            hash = username.charCodeAt(i) + ((hash << 5) - hash);
+            hash = hash & hash; // Convert to 32bit integer
+        }
+
+        // Use hash to generate hue (0-360)
+        const hue = Math.abs(hash % 360);
+
+        // Fixed saturation and lightness for readability on dark background
+        return `hsl(${hue}, 70%, 65%)`;
+    }
+
+    /**
      * Parse emotes in message and convert to HTML
      * @param {string} message - The message content
      * @returns {string} HTML string with emotes converted to images
@@ -168,6 +188,7 @@ class KickChat {
         const usernameSpan = document.createElement('span');
         usernameSpan.className = 'kick-chat-username';
         usernameSpan.textContent = `${username}:`;
+        usernameSpan.style.color = this.usernameToColor(username);
 
         const contentSpan = document.createElement('span');
         contentSpan.className = 'kick-chat-content';
