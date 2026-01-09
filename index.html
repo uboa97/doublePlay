@@ -94,9 +94,10 @@
             font-weight: 600;
             min-width: 80px;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 960px) {
             .audio-controls-container {
                 flex-direction: column;
+                flex-wrap: nowrap;
             }
             .skip-buttons-left,
             .skip-buttons-right {
@@ -220,14 +221,16 @@
         }
         body.fit-mode .container {
             max-width: 100% !important;
-            padding: 0;
+            padding: 0 10px;
             padding-top: 10px;
             margin: 0;
+            box-sizing: border-box;
         }
         body.fit-mode #playerContainer {
             padding: 10px;
             border: none;
             box-shadow: none;
+            box-sizing: border-box;
         }
         body.fit-mode .card,
         body.fit-mode .multiview-link,
@@ -250,7 +253,9 @@
             padding-bottom: 0;
             /* Account for: header(50px) + gap(16px) + audio player(350px) + play button(80px) + padding(20px) */
             height: calc(100vh - 520px);
-            max-height: calc((100vw - 20px) * 0.5625);
+            /* Account for: body padding(20px) + container padding(20px) + playerContainer padding(20px) */
+            max-width: calc(100vw - 60px);
+            max-height: calc((100vw - 60px) * 0.5625);
             aspect-ratio: 16/9;
             margin: 0 auto;
         }
