@@ -295,6 +295,25 @@
         }
     </style>
 </head>
+<!-- Clear All Confirmation Modal -->
+<div class="modal fade" id="clearAllModal" tabindex="-1" aria-labelledby="clearAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #0a0a0a; border: 1px solid #3d3d54;">
+            <div class="modal-header" style="border-bottom: 1px solid #3d3d54;">
+                <h5 class="modal-title" id="clearAllModalLabel" style="color: #e4e4e4;">Confirm Clear All</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="color: #e4e4e4;">
+                <p id="clearAllMessage">Are you sure you want to clear all items?</p>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #3d3d54;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmClearBtn">Clear All</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Intro Modal -->
 <div class="modal fade" id="introModal" tabindex="-1" aria-labelledby="introModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -426,6 +445,9 @@
                         </div>
                     </div>
                     <div id="itemList" class="list-group">
+                    </div>
+                    <div id="clearAllContainer" class="text-center mt-3" style="display: none;">
+                        <button type="button" id="clearAllBtn" class="btn btn-sm btn-outline-danger">Clear all</button>
                     </div>
                 </div>
             </div>
@@ -717,6 +739,42 @@
             updateRecentSelectors();
         }
 
+        // Clear all modal handling
+        let pendingClearAction = null;
+        const clearAllModal = new bootstrap.Modal(document.getElementById('clearAllModal'));
+
+        // Clear all recently played
+        function clearAllRecent() {
+            document.getElementById('clearAllMessage').textContent = 'Are you sure you want to clear all recently played items?';
+            pendingClearAction = 'recent';
+            clearAllModal.show();
+        }
+
+        // Clear all favorites
+        function clearAllFavorites() {
+            document.getElementById('clearAllMessage').textContent = 'Are you sure you want to clear all favorites?';
+            pendingClearAction = 'favorites';
+            clearAllModal.show();
+        }
+
+        // Confirm clear action
+        document.getElementById('confirmClearBtn').addEventListener('click', function() {
+            if (pendingClearAction === 'recent') {
+                localStorage.setItem(STORAGE_KEY, '[]');
+                currentPage = 0;
+                loadHistoryView();
+                updateRecentSelectors();
+            } else if (pendingClearAction === 'favorites') {
+                localStorage.setItem(FAVORITES_KEY, '[]');
+                currentPage = 0;
+                updateFavoritesCount();
+                loadHistoryView();
+                updateRecentSelectors();
+            }
+            pendingClearAction = null;
+            clearAllModal.hide();
+        });
+
         // Extract YouTube video ID from URL
         function getYouTubeID(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -787,6 +845,8 @@
             const pageInfo = document.getElementById('pageInfo');
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
+            const clearAllContainer = document.getElementById('clearAllContainer');
+            const clearAllBtn = document.getElementById('clearAllBtn');
 
             // Check if we should display the section
             const recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -809,6 +869,7 @@
                     'No recently played items yet.';
                 itemList.appendChild(emptyMsg);
                 paginationControls.style.display = 'none';
+                clearAllContainer.style.display = 'none';
                 return;
             }
 
@@ -894,6 +955,13 @@
 
                 itemList.appendChild(listItem);
             });
+
+            // Show clear all button and wire up the correct handler
+            clearAllContainer.style.display = 'block';
+            // Remove any existing click handlers by cloning and replacing
+            const newClearBtn = clearAllBtn.cloneNode(true);
+            clearAllBtn.parentNode.replaceChild(newClearBtn, clearAllBtn);
+            newClearBtn.addEventListener('click', currentView === 'recent' ? clearAllRecent : clearAllFavorites);
         }
 
         // Escape HTML to prevent XSS
