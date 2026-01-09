@@ -132,6 +132,28 @@
         .form-control::placeholder {
             color: #888899;
         }
+        .form-select {
+            background-color: #1a1a1a;
+            border-color: #4a4a5e;
+            color: #e4e4e4;
+        }
+        .form-select:focus {
+            background-color: #242424;
+            border-color: #667eea;
+            color: #e4e4e4;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+        .form-select option {
+            background-color: #1a1a1a;
+            color: #e4e4e4;
+        }
+        .recent-select {
+            font-size: 13px;
+            opacity: 0.8;
+        }
+        .recent-select:hover {
+            opacity: 1;
+        }
         .form-label {
             color: #e4e4e4;
         }
@@ -370,12 +392,18 @@
                 <div class="mb-3">
                     <label for="videoLink" class="form-label fw-bold">Video Link (with muted video)</label>
                     <input type="text" class="form-control" id="videoLink" placeholder="Paste YouTube URL here">
+                    <select class="form-select form-select-sm mt-1 recent-select" id="videoLinkSelect">
+                        <option value="">Select from recent videos...</option>
+                    </select>
                     <small class="form-text text-muted">This video will be displayed with no sound</small>
                 </div>
 
                 <div class="mb-4">
                     <label for="audioLink" class="form-label fw-bold">Audio Vid Link</label>
                     <input type="text" class="form-control" id="audioLink" placeholder="Paste YouTube URL here">
+                    <select class="form-select form-select-sm mt-1 recent-select" id="audioLinkSelect">
+                        <option value="">Select from recent videos...</option>
+                    </select>
                     <small class="form-text text-muted">This video will play with audio</small>
                 </div>
 
@@ -452,6 +480,7 @@
         window.addEventListener('DOMContentLoaded', function() {
             updateFavoritesCount();
             loadHistoryView();
+            updateRecentSelectors();
 
             // Check if YouTube API is already loaded (in case of fast load or cache)
             if (typeof YT !== 'undefined' && YT.loaded) {
@@ -562,6 +591,91 @@
             }
         }
 
+        // Get unique videos from recent and favorites for the selectors
+        // Returns separate lists for video links and audio links
+        function getUniqueVideos() {
+            const recent = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+            const allItems = [...recent, ...favorites];
+
+            const videoMap = new Map();
+            const audioMap = new Map();
+
+            allItems.forEach(item => {
+                // Add video link to video map if not already present
+                if (item.videoLink && !videoMap.has(item.videoLink)) {
+                    videoMap.set(item.videoLink, {
+                        link: item.videoLink,
+                        title: item.videoTitle || getYouTubeID(item.videoLink)
+                    });
+                }
+                // Add audio link to audio map if not already present
+                if (item.audioLink && !audioMap.has(item.audioLink)) {
+                    audioMap.set(item.audioLink, {
+                        link: item.audioLink,
+                        title: item.audioTitle || getYouTubeID(item.audioLink)
+                    });
+                }
+            });
+
+            return {
+                videoLinks: Array.from(videoMap.values()),
+                audioLinks: Array.from(audioMap.values())
+            };
+        }
+
+        // Update the recent video selectors
+        function updateRecentSelectors() {
+            const { videoLinks, audioLinks } = getUniqueVideos();
+            const videoSelect = document.getElementById('videoLinkSelect');
+            const audioSelect = document.getElementById('audioLinkSelect');
+
+            // Clear existing options except the first placeholder
+            videoSelect.innerHTML = '<option value="">Select from recent videos...</option>';
+            audioSelect.innerHTML = '<option value="">Select from recent audio...</option>';
+
+            // Handle video selector
+            if (videoLinks.length === 0) {
+                videoSelect.style.display = 'none';
+            } else {
+                videoSelect.style.display = 'block';
+                videoLinks.forEach(video => {
+                    const truncatedTitle = video.title.length > 60 ? video.title.substring(0, 60) + '...' : video.title;
+                    const option = document.createElement('option');
+                    option.value = video.link;
+                    option.textContent = truncatedTitle;
+                    videoSelect.appendChild(option);
+                });
+            }
+
+            // Handle audio selector
+            if (audioLinks.length === 0) {
+                audioSelect.style.display = 'none';
+            } else {
+                audioSelect.style.display = 'block';
+                audioLinks.forEach(audio => {
+                    const truncatedTitle = audio.title.length > 60 ? audio.title.substring(0, 60) + '...' : audio.title;
+                    const option = document.createElement('option');
+                    option.value = audio.link;
+                    option.textContent = truncatedTitle;
+                    audioSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Handle selector changes
+        document.getElementById('videoLinkSelect').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('videoLink').value = this.value;
+            }
+        });
+
+        document.getElementById('audioLinkSelect').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('audioLink').value = this.value;
+            }
+        });
+
         // Check if item is already in favorites
         function isFavorite(videoLink, audioLink) {
             const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
@@ -588,6 +702,7 @@
             // Update count and reload view to update button state
             updateFavoritesCount();
             loadHistoryView();
+            updateRecentSelectors();
         }
 
         // Remove from favorites
@@ -599,6 +714,7 @@
             localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
             updateFavoritesCount();
             loadHistoryView();
+            updateRecentSelectors();
         }
 
         // Extract YouTube video ID from URL
@@ -659,6 +775,7 @@
             // Reset to first page when new item is added
             currentPage = 0;
             loadHistoryView();
+            updateRecentSelectors();
         }
 
         // Load and display history view (recent or favorites)
