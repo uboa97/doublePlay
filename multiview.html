@@ -68,9 +68,13 @@
             margin: 0 auto;
             overflow: hidden;
         }
-        /* 1 stream: full width */
+        /* 1 stream: full width, but constrained by height */
         .video-grid.grid-1 .stream-container {
             width: 100%;
+        }
+        .video-grid.grid-1 .stream-container .stream-iframe-container {
+            width: min(calc((100vh - 160px) * 16 / 9), 100%);
+            margin: 0 auto;
         }
         /* 2-5 streams: 2 per row */
         .video-grid.grid-2 .stream-container,
@@ -290,24 +294,49 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.3s ease, order 0.3s ease;
         }
         .video-grid.focus-mode .stream-container.focused {
-            width: 100% !important;
-            flex: 1 0 100%;
-            max-width: 100%;
+            flex: 0 0 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             order: -1;
             cursor: default;
-            max-height: 65vh;
             overflow: hidden;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+        .video-grid.focus-mode .stream-container.focused > .stream-header,
+        .video-grid.focus-mode .stream-container.focused > .stream-iframe-container {
+            width: min(calc((100vh - 370px) * 16 / 9), 1800px, 100%);
+        }
+        .video-grid.focus-mode .stream-container.focused > .stream-header {
+            background-color: #0a0a0a;
+            border: 1px solid #3d3d54;
+            border-bottom: none;
+            border-radius: 15px 15px 0 0;
         }
         .video-grid.focus-mode .stream-container.focused .stream-iframe-container {
-            max-height: calc(65vh - 40px);
-            max-width: 1800px;
-            margin: 0 auto;
+            height: auto;
+            aspect-ratio: 16/9;
+            border: 1px solid #3d3d54;
+            border-top: none;
+            border-radius: 0 0 15px 15px;
         }
         .video-grid.focus-mode .stream-container:not(.focused) {
-            flex: 1 1 0;
-            min-width: 200px;
-            max-width: 500px;
+            flex: 0 0 auto;
+            width: 320px;
+            min-width: 240px;
             order: 1;
+        }
+        .video-grid.focus-mode .stream-container:not(.focused) .stream-iframe-container {
+            aspect-ratio: 16/9;
+            min-height: 135px;
+        }
+        .video-grid.focus-mode .stream-container:not(.focused) .stream-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: calc(100% - 35px);
         }
         .bg-surface-lowest {
             overflow: hidden !important;
@@ -318,19 +347,12 @@
         }
         @media (max-width: 1200px) {
             .video-grid.focus-mode .stream-container:not(.focused) {
-                width: calc(33.333% - 14px);
+                width: 280px;
             }
         }
         @media (max-width: 768px) {
             .video-grid.focus-mode .stream-container:not(.focused) {
-                width: calc(50% - 10px);
-                min-width: 150px;
-            }
-            .video-grid.focus-mode .stream-container.focused {
-                max-height: 55vh;
-            }
-            .video-grid.focus-mode .stream-container.focused .stream-iframe-container {
-                max-height: calc(55vh - 40px);
+                width: 240px;
             }
         }
         /* Recently Watched Sidebar */
