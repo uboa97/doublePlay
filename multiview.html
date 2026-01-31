@@ -371,18 +371,14 @@
             height: 100vh;
             background-color: #0a0a0a;
             border-right: 1px solid #3d3d54;
-            overflow-y: auto;
             padding: 20px 15px;
             z-index: 1000;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
             transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
         .sidebar.hidden {
             transform: translateX(-100%);
-        }
-        .sidebar::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
         }
         .sidebar-header {
             font-size: 18px;
@@ -446,7 +442,6 @@
         .recently-watched-item:hover {
             background-color: #353548;
             border-color: #667eea;
-            transform: translateX(5px);
         }
         .recently-watched-item:hover .recently-watched-remove-btn {
             opacity: 1;
@@ -491,7 +486,6 @@
         .add-stream-sidebar-btn:hover {
             background-color: #353548;
             border-color: #667eea;
-            transform: translateX(5px);
         }
         .recently-watched-platform {
             display: flex;
@@ -511,6 +505,24 @@
             color: #9999aa;
             font-size: 13px;
             margin-top: 40px;
+        }
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .sidebar-content::-webkit-scrollbar {
+            display: none;
+        }
+        .sidebar-footer {
+            border-top: 2px solid #3d3d54;
+            padding-top: 15px;
+            margin-top: 10px;
+        }
+        .sidebar-footer .clear-recent-btn {
+            width: 100%;
+            padding: 8px 12px;
         }
         .main-content-with-sidebar {
             margin-left: 280px;
@@ -685,6 +697,98 @@
         .sidebar.hidden ~ .sidebar-toggle-show.left {
             display: block;
         }
+        /* Sidebar Tabs */
+        .sidebar-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .sidebar-tab {
+            flex: 1;
+            background: none;
+            border: 1px solid #4a4a5e;
+            color: #9999aa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .sidebar-tab:hover {
+            background-color: #353548;
+            border-color: #667eea;
+        }
+        .sidebar-tab.active {
+            background-color: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+        .sidebar-section {
+            display: none;
+        }
+        .sidebar-section.active {
+            display: block;
+        }
+        .preset-item {
+            background-color: #0a0a0a;
+            border: 1px solid #3d3d54;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .preset-item:hover {
+            background-color: #353548;
+            border-color: #667eea;
+        }
+        .preset-item:hover .preset-remove-btn {
+            opacity: 1;
+        }
+        .preset-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e4e4e4;
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 30px;
+        }
+        .preset-info {
+            font-size: 11px;
+            color: #9999aa;
+        }
+        .preset-remove-btn {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            opacity: 0;
+        }
+        .preset-remove-btn:hover {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        #savePresetBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .chat-sidebar.hidden ~ .sidebar-toggle-show.right {
             display: block;
         }
@@ -714,6 +818,9 @@
             <button type="button" id="focusModeToggle" class="btn btn-outline-light btn-sm">
                 🎯 Focus Mode
             </button>
+            <button type="button" id="savePresetBtn" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#savePresetModal" disabled>
+                💾 Save Preset
+            </button>
         </div>
         <a href="index.html" class="header-link">🎬 Double Play</a>
     </div>
@@ -721,12 +828,27 @@
     <!-- Recently Watched Sidebar -->
     <div class="sidebar" id="recentSidebar">
         <div class="sidebar-header">
-            <span class="sidebar-header-title">📜 Recently Watched</span>
+            <span class="sidebar-header-title">📺 Streams</span>
             <button id="toggleRecentSidebar" class="toggle-sidebar-btn" title="Hide sidebar">Hide</button>
-            <button id="clearRecentBtn" class="clear-recent-btn" title="Clear all recently watched">Clear</button>
         </div>
-        <div id="recentlyWatchedList">
-            <div class="sidebar-empty">No streams yet</div>
+        <div class="sidebar-tabs">
+            <button class="sidebar-tab active" data-tab="recent">📜 Recent</button>
+            <button class="sidebar-tab" data-tab="presets">💾 Presets</button>
+        </div>
+        <div class="sidebar-content">
+            <div id="recentSection" class="sidebar-section active">
+                <div id="recentlyWatchedList">
+                    <div class="sidebar-empty">No streams yet</div>
+                </div>
+            </div>
+            <div id="presetsSection" class="sidebar-section">
+                <div id="presetsList">
+                    <div class="sidebar-empty">No presets saved</div>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <button id="clearRecentBtn" class="clear-recent-btn" title="Clear all recently watched">Clear All</button>
         </div>
     </div>
     <button class="sidebar-toggle-show left" id="showRecentSidebar" title="Show Recently Watched">📜</button>
@@ -798,6 +920,31 @@
         </div>
     </div>
 
+    <!-- Save Preset Modal -->
+    <div class="modal fade" id="savePresetModal" tabindex="-1" aria-labelledby="savePresetModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="savePresetModalLabel">Save Preset</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="presetNameInput" class="form-label fw-bold">Preset Name</label>
+                        <input type="text" class="form-control" id="presetNameInput" placeholder="Enter a name for this preset">
+                    </div>
+                    <div id="presetStreamPreview" class="text-muted small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmSavePresetBtn" class="btn btn-primary">
+                        💾 Save Preset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer style="position: fixed; bottom: 20px; right: 20px; z-index: 100;">
         <div class="text-muted small" style="display: flex; align-items: center; gap: 8px; opacity: 0.4;">
             <span style="font-size: 1.2rem;">✉️</span>
@@ -833,6 +980,8 @@
         const MAX_RECENTLY_WATCHED = 50;
         const RECENT_SIDEBAR_HIDDEN_KEY = 'multiviewRecentSidebarHidden';
         const CHAT_SIDEBAR_HIDDEN_KEY = 'multiviewChatSidebarHidden';
+        const PRESETS_KEY = 'multiviewPresets';
+        const MAX_PRESETS = 50;
 
         const recentSidebar = document.getElementById('recentSidebar');
         const chatSidebar = document.getElementById('chatSidebar');
@@ -951,11 +1100,9 @@
                 emptyDiv.className = 'sidebar-empty';
                 emptyDiv.textContent = 'No streams yet';
                 recentlyWatchedList.appendChild(emptyDiv);
-                clearRecentBtn.style.display = 'none';
                 return;
             }
 
-            clearRecentBtn.style.display = 'block';
             recentlyWatched.forEach((item, index) => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'recently-watched-item';
@@ -1175,6 +1322,15 @@
 
             // Disable focus mode toggle if fewer than 2 streams
             focusModeToggle.disabled = streams.length < 2;
+
+            // Update save preset button
+            updateSavePresetButton();
+        }
+
+        // Update Save Preset button state (defined here for early use, will be overridden later)
+        function updateSavePresetButton() {
+            const btn = document.getElementById('savePresetBtn');
+            if (btn) btn.disabled = streams.length === 0;
         }
 
         // Switch focus to a different stream (using CSS only)
@@ -1637,6 +1793,223 @@
 
         // Initialize sidebar states on page load
         initializeSidebarStates();
+
+        // Preset Management
+        const savePresetBtn = document.getElementById('savePresetBtn');
+        const presetNameInput = document.getElementById('presetNameInput');
+        const presetStreamPreview = document.getElementById('presetStreamPreview');
+        const confirmSavePresetBtn = document.getElementById('confirmSavePresetBtn');
+        const presetsList = document.getElementById('presetsList');
+        const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+        const recentSection = document.getElementById('recentSection');
+        const presetsSection = document.getElementById('presetsSection');
+
+        // Tab switching
+        sidebarTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const targetTab = this.getAttribute('data-tab');
+
+                // Update active tab
+                sidebarTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                // Show/hide sections
+                if (targetTab === 'recent') {
+                    recentSection.classList.add('active');
+                    presetsSection.classList.remove('active');
+                } else {
+                    recentSection.classList.remove('active');
+                    presetsSection.classList.add('active');
+                }
+            });
+        });
+
+        // Get presets from localStorage
+        function getPresets() {
+            try {
+                const stored = localStorage.getItem(PRESETS_KEY);
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                console.error('Error loading presets:', e);
+                return [];
+            }
+        }
+
+        // Save preset to localStorage
+        function savePreset(name, streamsList) {
+            try {
+                let presets = getPresets();
+
+                const newPreset = {
+                    id: Date.now(),
+                    name: name,
+                    streams: streamsList.map(s => ({
+                        platform: s.platform,
+                        input: s.input,
+                        displayName: s.displayName
+                    })),
+                    timestamp: Date.now()
+                };
+
+                // Add to front
+                presets.unshift(newPreset);
+
+                // Keep max presets
+                if (presets.length > MAX_PRESETS) {
+                    presets = presets.slice(0, MAX_PRESETS);
+                }
+
+                localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+                renderPresets();
+            } catch (e) {
+                console.error('Error saving preset:', e);
+            }
+        }
+
+        // Delete a preset
+        function deletePreset(presetId) {
+            try {
+                let presets = getPresets();
+                presets = presets.filter(p => p.id !== presetId);
+                localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+                renderPresets();
+            } catch (e) {
+                console.error('Error deleting preset:', e);
+            }
+        }
+
+        // Load a preset (clear current streams and load preset streams)
+        async function loadPreset(presetId) {
+            const presets = getPresets();
+            const preset = presets.find(p => p.id === presetId);
+
+            if (!preset) {
+                alert('Preset not found');
+                return;
+            }
+
+            // Clear all current streams
+            while (streams.length > 0) {
+                removeStream(streams[0].id);
+            }
+
+            // Add each stream from the preset
+            for (const streamData of preset.streams) {
+                const iframeURL = generateIframeURL(streamData.platform, streamData.input);
+                if (!iframeURL) continue;
+
+                const streamId = streamIdCounter++;
+                const stream = {
+                    id: streamId,
+                    platform: streamData.platform,
+                    displayName: streamData.displayName,
+                    iframeURL: iframeURL,
+                    input: streamData.input
+                };
+
+                streams.push(stream);
+
+                const streamElement = createStreamElement(stream);
+                videoGrid.appendChild(streamElement);
+
+                // Save to recently watched
+                saveToRecentlyWatched(streamData.platform, streamData.input, streamData.displayName, iframeURL);
+            }
+
+            // Update UI
+            updateGridClass();
+            updateEmptyState();
+            updateChatSelector();
+            updateSavePresetButton();
+        }
+
+        // Render presets list
+        function renderPresets() {
+            const presets = getPresets();
+            presetsList.innerHTML = '';
+
+            if (presets.length === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'sidebar-empty';
+                emptyDiv.textContent = 'No presets saved';
+                presetsList.appendChild(emptyDiv);
+                return;
+            }
+
+            presets.forEach(preset => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'preset-item';
+
+                const streamCount = preset.streams.length;
+                const platforms = [...new Set(preset.streams.map(s => s.platform))].join(', ');
+
+                itemDiv.innerHTML = `
+                    <div class="preset-name" title="${escapeHtml(preset.name)}">${escapeHtml(preset.name)}</div>
+                    <div class="preset-info">${streamCount} stream${streamCount !== 1 ? 's' : ''} (${platforms})</div>
+                    <button class="preset-remove-btn" title="Delete preset">×</button>
+                `;
+
+                itemDiv.addEventListener('click', function() {
+                    loadPreset(preset.id);
+                });
+
+                const removeBtn = itemDiv.querySelector('.preset-remove-btn');
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (confirm(`Delete preset "${preset.name}"?`)) {
+                        deletePreset(preset.id);
+                    }
+                });
+
+                presetsList.appendChild(itemDiv);
+            });
+        }
+
+        // Save Preset Modal events
+        const savePresetModal = document.getElementById('savePresetModal');
+        savePresetModal.addEventListener('show.bs.modal', function() {
+            presetNameInput.value = '';
+
+            // Show preview of streams
+            const streamNames = streams.map(s => `[${s.platform.toUpperCase()}] ${s.displayName}`);
+            presetStreamPreview.innerHTML = '<strong>Streams to save:</strong><br>' + streamNames.map(n => escapeHtml(n)).join('<br>');
+        });
+
+        savePresetModal.addEventListener('shown.bs.modal', function() {
+            presetNameInput.focus();
+        });
+
+        confirmSavePresetBtn.addEventListener('click', function() {
+            const name = presetNameInput.value.trim();
+
+            if (!name) {
+                alert('Please enter a name for the preset');
+                return;
+            }
+
+            if (streams.length === 0) {
+                alert('No streams to save');
+                return;
+            }
+
+            savePreset(name, streams);
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(savePresetModal);
+            if (modal) {
+                modal.hide();
+            }
+        });
+
+        // Allow Enter key to save preset
+        presetNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmSavePresetBtn.click();
+            }
+        });
+
+        // Initialize presets list
+        renderPresets();
     </script>
 </body>
 </html>
