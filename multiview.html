@@ -894,6 +894,11 @@
                             <input type="text" class="form-control" id="streamInput" placeholder="Paste YouTube URL here">
                             <small class="form-text text-muted" id="inputHelp">Enter the full YouTube video URL</small>
                         </div>
+                        <div class="col-md-12" id="customNameContainer" style="display: none;">
+                            <label for="customNameInput" class="form-label fw-bold">Stream Name (optional)</label>
+                            <input type="text" class="form-control" id="customNameInput" placeholder="Enter a name for this stream">
+                            <small class="form-text text-muted">This name will be displayed instead of the channel ID</small>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -953,6 +958,8 @@
         const streamInput = document.getElementById('streamInput');
         const inputLabel = document.getElementById('inputLabel');
         const inputHelp = document.getElementById('inputHelp');
+        const customNameContainer = document.getElementById('customNameContainer');
+        const customNameInput = document.getElementById('customNameInput');
         const addStreamBtn = document.getElementById('addStreamBtn');
         const videoGrid = document.getElementById('videoGrid');
         const emptyState = document.getElementById('emptyState');
@@ -995,17 +1002,30 @@
                 // Update placeholder and label
                 updateInputPlaceholder(platform);
 
+                // Hide custom name input when switching platforms (will re-check on input)
+                updateCustomNameVisibility();
+
                 // Save to localStorage
                 localStorage.setItem(PLATFORM_KEY, platform);
             });
         });
 
+        // Check if custom name input should be shown
+        function updateCustomNameVisibility() {
+            const input = streamInput.value.trim();
+            const shouldShow = currentPlatform === 'youtube' && input && isYouTubeChannelID(input);
+            customNameContainer.style.display = shouldShow ? 'block' : 'none';
+        }
+
+        // Listen for input changes to detect channel IDs
+        streamInput.addEventListener('input', updateCustomNameVisibility);
+
         function updateInputPlaceholder(platform) {
             switch(platform) {
                 case 'youtube':
-                    inputLabel.textContent = 'YouTube Video Link';
-                    streamInput.placeholder = 'Paste YouTube URL here';
-                    inputHelp.textContent = 'Enter the full YouTube video URL';
+                    inputLabel.textContent = 'YouTube Video Link or Channel ID';
+                    streamInput.placeholder = 'Paste YouTube URL or Channel ID here';
+                    inputHelp.textContent = 'Enter a YouTube video URL or Channel ID (for live streams)';
                     break;
                 case 'kick':
                     inputLabel.textContent = 'Kick Username';
@@ -1204,12 +1224,38 @@
             return (match && match[2].length === 11) ? match[2] : null;
         }
 
+        // Check if input is a YouTube channel ID
+        function isYouTubeChannelID(input) {
+            // Channel IDs typically start with "UC" and are 24 characters long
+            // Also accept inputs that look like channel IDs (alphanumeric, no spaces, reasonable length)
+            const channelIdPattern = /^UC[\w-]{22}$/;
+            const genericChannelPattern = /^[\w-]{20,30}$/;
+
+            // If it matches the standard channel ID pattern, it's definitely a channel ID
+            if (channelIdPattern.test(input)) {
+                return true;
+            }
+
+            // If it matches the generic pattern and doesn't look like a URL, treat it as a channel ID
+            if (genericChannelPattern.test(input) && !input.includes('/') && !input.includes('.')) {
+                return true;
+            }
+
+            return false;
+        }
+
         // Generate iframe URL based on platform
         function generateIframeURL(platform, input) {
             const parentDomain = window.location.hostname || 'localhost';
 
             switch(platform) {
                 case 'youtube':
+                    // Check if input is a channel ID
+                    if (isYouTubeChannelID(input)) {
+                        // Use the live_stream embed endpoint for channel IDs
+                        return `https://www.youtube.com/embed/live_stream?channel=${input}&autoplay=1&mute=1&rel=0`;
+                    }
+                    // Otherwise, extract video ID from URL
                     const videoID = getYouTubeID(input);
                     if (!videoID) return null;
                     return `https://www.youtube.com/embed/${videoID}?autoplay=1&mute=1&rel=0`;
@@ -1246,6 +1292,12 @@
         async function getStreamDisplayName(platform, input) {
             switch(platform) {
                 case 'youtube':
+                    // Check if it's a channel ID
+                    if (isYouTubeChannelID(input)) {
+                        // For channel IDs, show a prefix to indicate it's a live stream
+                        return `${input} (Live)`;
+                    }
+                    // For video URLs, fetch the title
                     const videoID = getYouTubeID(input);
                     if (!videoID) return input;
                     // Fetch the actual title for YouTube videos
@@ -1404,6 +1456,7 @@
         addStreamBtn.addEventListener('click', async function() {
             const platform = currentPlatform;
             const input = streamInput.value.trim();
+            const customName = customNameInput.value.trim();
 
             if (!input) {
                 alert('Please enter a stream URL or username');
@@ -1416,7 +1469,13 @@
                 return;
             }
 
-            const displayName = await getStreamDisplayName(platform, input);
+            // Use custom name if provided (for channel IDs), otherwise fetch/generate display name
+            let displayName;
+            if (customName && platform === 'youtube' && isYouTubeChannelID(input)) {
+                displayName = customName;
+            } else {
+                displayName = await getStreamDisplayName(platform, input);
+            }
             const streamId = streamIdCounter++;
 
             const stream = {
@@ -1455,8 +1514,10 @@
             // Save to recently watched
             saveToRecentlyWatched(platform, input, displayName, iframeURL);
 
-            // Clear input
+            // Clear inputs
             streamInput.value = '';
+            customNameInput.value = '';
+            customNameContainer.style.display = 'none';
 
             // Close the modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('addStreamModal'));
@@ -1697,6 +1758,8 @@
         const addStreamModal = document.getElementById('addStreamModal');
         addStreamModal.addEventListener('show.bs.modal', function () {
             streamInput.value = '';
+            customNameInput.value = '';
+            customNameContainer.style.display = 'none';
             const savedPlatform = getSavedPlatform();
 
             // Set active button
