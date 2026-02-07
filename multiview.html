@@ -420,6 +420,7 @@
             border: 1px solid #3d3d54;
             border-radius: 8px;
             padding: 10px;
+            padding-right: 68px;
             margin-bottom: 10px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -430,6 +431,41 @@
             border-color: #667eea;
         }
         .recently-watched-item:hover .recently-watched-remove-btn {
+            opacity: 1;
+        }
+        .recently-watched-item:hover .recently-watched-edit-btn {
+            opacity: 1;
+        }
+        .recently-watched-item.is-editing {
+            cursor: default;
+            border-color: #667eea;
+        }
+        .recently-watched-edit-btn {
+            position: absolute;
+            top: 50%;
+            right: 34px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #9bb0ff;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 0;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            opacity: 0;
+        }
+        .recently-watched-edit-btn:hover {
+            background-color: #667eea;
+            color: white;
+        }
+        .recently-watched-item.is-editing .recently-watched-edit-btn,
+        .recently-watched-item.is-editing .recently-watched-remove-btn {
             opacity: 1;
         }
         .recently-watched-remove-btn {
@@ -485,6 +521,29 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        .recently-watched-name-text {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .recently-watched-name-input {
+            display: none;
+            width: 100%;
+            background-color: #13131b;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            color: #e4e4e4;
+            font-size: 13px;
+            padding: 2px 6px;
+            outline: none;
+        }
+        .recently-watched-item.is-editing .recently-watched-name-text {
+            display: none;
+        }
+        .recently-watched-item.is-editing .recently-watched-name-input {
+            display: block;
         }
         .sidebar-empty {
             text-align: center;
@@ -1117,14 +1176,61 @@
                         <span class="platform-badge ${item.platform}">${item.platform}</span>
                     </div>
                     <div class="recently-watched-name" title="${escapeHtml(item.displayName)}">
-                        ${escapeHtml(item.displayName)}
+                        <span class="recently-watched-name-text">${escapeHtml(item.displayName)}</span>
+                        <input class="recently-watched-name-input" type="text" maxlength="100" aria-label="Edit stream name">
                     </div>
+                    <button class="recently-watched-edit-btn" title="Rename stream">✎</button>
                     <button class="recently-watched-remove-btn" title="Remove from recently watched">×</button>
                 `;
 
                 // Add click handler to add this stream
                 itemDiv.addEventListener('click', function() {
+                    if (itemDiv.classList.contains('is-editing')) {
+                        return;
+                    }
                     addStreamFromRecent(item);
+                });
+
+                const editBtn = itemDiv.querySelector('.recently-watched-edit-btn');
+                const nameInput = itemDiv.querySelector('.recently-watched-name-input');
+
+                editBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    itemDiv.classList.add('is-editing');
+                    nameInput.value = item.displayName;
+                    nameInput.focus();
+                    nameInput.select();
+                });
+
+                nameInput.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+
+                nameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        nameInput.blur();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        nameInput.dataset.cancelEdit = 'true';
+                        nameInput.blur();
+                    }
+                });
+
+                nameInput.addEventListener('blur', function() {
+                    const shouldCancel = nameInput.dataset.cancelEdit === 'true';
+                    nameInput.dataset.cancelEdit = 'false';
+                    itemDiv.classList.remove('is-editing');
+
+                    if (shouldCancel) {
+                        nameInput.value = item.displayName;
+                        return;
+                    }
+
+                    const updatedName = nameInput.value.trim();
+                    if (updatedName && updatedName !== item.displayName) {
+                        updateRecentlyWatchedName(index, updatedName);
+                    }
                 });
 
                 // Add remove button click handler with stopPropagation
@@ -1160,6 +1266,26 @@
                 renderRecentlyWatched();
             } catch (e) {
                 console.error('Error removing from recently watched:', e);
+            }
+        }
+
+        function updateRecentlyWatchedName(index, newName) {
+            try {
+                const trimmedName = newName.trim();
+                if (!trimmedName) {
+                    return;
+                }
+
+                let recentlyWatched = getRecentlyWatched();
+                if (!recentlyWatched[index]) {
+                    return;
+                }
+
+                recentlyWatched[index].displayName = trimmedName;
+                localStorage.setItem(RECENTLY_WATCHED_KEY, JSON.stringify(recentlyWatched));
+                renderRecentlyWatched();
+            } catch (e) {
+                console.error('Error renaming recently watched item:', e);
             }
         }
 
